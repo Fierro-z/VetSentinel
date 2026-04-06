@@ -29,7 +29,7 @@ El sistema organiza la información en:
 
 ## 👨‍💻 Autores
 * **Carlos Daniel Fierro** ([Fierro-z](https://github.com/Fierro-z))
-* **Sebastian Osorio**
+* **Sebastian Osorio** ([OsOsorio79]((https://github.com/OsOsorio79))
 
 ---
 *Proyecto académico para las asignaturas de Proyecto integrador 1 y Programación Orientada a Objetos (POO).*
