@@ -1,3 +1,4 @@
+![Banner de VetSentinel](img/bannerProyecto.png)
 # VetSentinel 🐾
 **Prevención de enfermedades zoonóticas parasitarias: De la Clínica al Hogar.**
 
