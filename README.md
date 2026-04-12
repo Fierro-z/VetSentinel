@@ -11,9 +11,6 @@ VetSentinel es un software en Java diseñado para registrar diagnósticos veteri
 
 ## 📖 Historias de Usuario
 
-> [!IMPORTANT]
-> Las funcionalidades del sistema fueron definidas a partir de las necesidades reales de sus usuarios.
-
 **HU-01 — Registro de diagnóstico y alerta de convivencia**
 > Como **veterinario**, quiero **registrar el diagnóstico parasitario de una mascota junto con los datos del hogar del propietario**, para que el sistema **genere automáticamente una alerta de riesgo** que indique si algún humano conviviente está en peligro de contagio.
 
@@ -50,9 +47,6 @@ El sistema organiza la información en:
 4. **Diagnósticos** (Historial de casos).
 
 ## ▶️ Cómo ejecutar
-
-> [!TIP]
-> Asegúrate de tener Java 17 o superior instalado antes de ejecutar el proyecto.
 
 1. Abre el proyecto en **IntelliJ IDEA**.
 2. Agrega el `.jar` de SQLite JDBC en `File → Project Structure → Libraries`.
