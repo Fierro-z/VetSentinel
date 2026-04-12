@@ -1,0 +1,112 @@
+@startuml VetSentinel
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle Bold
+skinparam class {
+    BackgroundColor #FFFEF0
+    BorderColor #8B6914
+    ArrowColor #555555
+}
+
+class Main {
+    + main(args: String[]) : void
+}
+
+class ConexionDB {
+    - URL : String = "jdbc:sqlite:vetsentimel.db"
+    --
+    + {static} getConexion() : Connection
+    + {static} inicializarBD() : void
+}
+
+class Propietario {
+    - id : int
+    - nombre : String
+    - direccion : String
+    - tieneNinos : boolean
+    - hayEmbarazadas : boolean
+    --
+    + Propietario(id, nombre, direccion, tieneNinos, hayEmbarazadas)
+    + getId() : int
+    + getNombre() : String
+    + getDireccion() : String
+    + isTieneNinos() : boolean
+    + isHayEmbarazadas() : boolean
+}
+
+class Mascota {
+    - id : int
+    - nombre : String
+    - especie : String
+    - edad : int
+    - propietario : Propietario
+    --
+    + Mascota(id, nombre, especie, edad, propietario)
+    + getId() : int
+    + getNombre() : String
+    + getEspecie() : String
+    + getEdad() : int
+    + getPropietario() : Propietario
+}
+
+class Parasito {
+    - id : int
+    - nombre : String
+    - riesgoPrincipal : String
+    - medidasPreventivas : String
+    --
+    + Parasito(id, nombre, riesgoPrincipal, medidasPreventivas)
+    + getId() : int
+    + getNombre() : String
+    + getRiesgoPrincipal() : String
+    + getMedidasPreventivas() : String
+}
+
+class Diagnostico {
+    - id : int
+    - mascota : Mascota
+    - parasito : Parasito
+    - fecha : String
+    - estadoContagio : String
+    --
+    + Diagnostico(id, mascota, parasito, fecha, estadoContagio)
+    + evaluarRiesgoHumano() : String
+    + getMascota() : Mascota
+    + getParasito() : Parasito
+    + getFecha() : String
+    + getEstadoContagio() : String
+}
+
+class VentanaVeterinaria {
+    - txtNombreMascota : JTextField
+    - txtEdadMascota : JTextField
+    - cbEspecie : JComboBox
+    - cbParasito : JComboBox
+    - txtNombrePropietario : JTextField
+    - txtDireccion : JTextField
+    - chkEmbarazada : JCheckBox
+    - chkNinos : JCheckBox
+    - btnGuardar : JButton
+    - btnVerHistorial : JButton
+    --
+    + VentanaVeterinaria()
+    - guardarYMostrarAlerta() : void
+    - guardarEnBD(...) : void
+    - verHistorial() : void
+}
+
+' Relaciones
+Main ..> ConexionDB : <<usa>>
+Main ..> VentanaVeterinaria : <<crea>>
+
+VentanaVeterinaria ..> ConexionDB : <<usa>>
+VentanaVeterinaria ..> Diagnostico : <<crea>>
+VentanaVeterinaria ..> Mascota : <<crea>>
+VentanaVeterinaria ..> Parasito : <<crea>>
+VentanaVeterinaria ..> Propietario : <<crea>>
+
+Diagnostico "1" --> "1" Mascota : mascota
+Diagnostico "1" --> "1" Parasito : parasito
+Mascota "1" --> "1" Propietario : propietario
+
+@enduml
