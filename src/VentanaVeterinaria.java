@@ -46,10 +46,11 @@ public class VentanaVeterinaria extends JFrame {
     private JTextField       txtCedula;
     private JTextField       txtNombrePropietario;
     private JTextField       txtDireccion;
-    private JCheckBox        chkEmbarazada;
+    private JCheckBox        chkEmbarazadas;
     private JCheckBox        chkNinos;
     private JButton          btnGuardar;
     private JButton          btnVerHistorial;
+    private JButton          btnEstadisticas;
 
     private JPanel    alertPanel;
     private JLabel    alertIconLabel;
@@ -271,6 +272,13 @@ public class VentanaVeterinaria extends JFrame {
         card.add(fieldRow("Nombre",  txtNombreMascota = createTextField("Ej: Milo")));
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Edad (años)", txtEdadMascota = createTextField("Ej: 3")));
+        txtEdadMascota.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) && e.getKeyChar() != java.awt.event.KeyEvent.VK_BACK_SPACE) {
+                    e.consume();
+                }
+            }
+        });
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
         card.add(Box.createVerticalStrut(3));
@@ -281,7 +289,17 @@ public class VentanaVeterinaria extends JFrame {
         card.add(Box.createVerticalStrut(10));
         card.add(sectionLabel("DATOS DEL PROPIETARIO"));
         card.add(Box.createVerticalStrut(5));
-        card.add(fieldRow("Cédula/Documento", txtCedula = createTextField("Ej: 1020304050")));
+        
+        JPanel pnlCedula = new JPanel(new BorderLayout(5, 0));
+        pnlCedula.setOpaque(false);
+        txtCedula = createTextField("Ej: 1020304050");
+        JButton btnBuscar = createButton("Buscar", () -> accentTeal);
+        btnBuscar.setPreferredSize(new Dimension(80, 42)); 
+        btnBuscar.addActionListener(e -> buscarClienteAutocompletar());
+        pnlCedula.add(txtCedula, BorderLayout.CENTER);
+        pnlCedula.add(btnBuscar, BorderLayout.EAST);
+        
+        card.add(fieldRow("Cédula/Documento", pnlCedula));
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Nombre completo", txtNombrePropietario = createTextField("Nombre del dueño")));
         card.add(Box.createVerticalStrut(3));
@@ -295,8 +313,8 @@ public class VentanaVeterinaria extends JFrame {
         riskRow.setOpaque(false);
         riskRow.setAlignmentX(Component.LEFT_ALIGNMENT); 
         // Garantizar que layout no se auto-oculte por BoxLayout: SIN restricciones MaximumSize estrictas!
-        riskRow.add(riskCard("🤰", "Mujer embarazada", chkEmbarazada = createCheckBox()));
-        riskRow.add(riskCard("👶", "Niños menores",    chkNinos      = createCheckBox()));
+        riskRow.add(riskCard("🤰", "Mujer embarazada", chkEmbarazadas = createCheckBox()));
+        riskRow.add(riskCard("👶", "Niños menores",    chkNinos       = createCheckBox()));
         card.add(riskRow);
 
         card.add(Box.createVerticalStrut(10));
@@ -307,15 +325,17 @@ public class VentanaVeterinaria extends JFrame {
     }
 
     private JPanel buildButtonRow() {
-        JPanel row = new JPanel(new GridLayout(1, 2, 10, 0));
+        JPanel row = new JPanel(new GridLayout(1, 3, 10, 0));
         row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        btnGuardar = createButton("Guardar y Generar Alerta", () -> dangerRed);
-        btnVerHistorial = createButton("Ver Historial", () -> accentBlue);
+        btnGuardar = createButton("Guardar", () -> dangerRed);
+        btnVerHistorial = createButton("Historial", () -> accentBlue);
+        btnEstadisticas = createButton("Estadísticas", () -> warnOrange);
 
         row.add(btnGuardar);
         row.add(btnVerHistorial);
+        row.add(btnEstadisticas);
         return row;
     }
 
@@ -435,6 +455,29 @@ public class VentanaVeterinaria extends JFrame {
     private void wireListeners() {
         btnGuardar.addActionListener(e -> guardarYMostrarAlerta());
         btnVerHistorial.addActionListener(e -> verHistorial());
+        btnEstadisticas.addActionListener(e -> verEstadisticas());
+    }
+
+    private void verEstadisticas() {
+        String stats = ConexionDB.obtenerEstadisticasEpidemiologicas();
+        showStyledDialog("Dashboard Epidemiológico INS", stats, JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    private void buscarClienteAutocompletar() {
+        String ced = txtCedula.getText().trim();
+        if (ced.isEmpty()) return;
+        Propietario p = ConexionDB.buscarPropietarioPorCedula(ced);
+        if (p != null) {
+            txtNombrePropietario.setText(p.getNombre());
+            txtDireccion.setText(p.getDireccion());
+            chkNinos.setSelected(p.isTieneNinos());
+            chkEmbarazadas.setSelected(p.isHayEmbarazadas());
+            chkNinos.repaint();
+            chkEmbarazadas.repaint();
+            showStyledDialog("Búsqueda Exitosa", "Perfil de cliente cargado de la base de datos.", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            showStyledDialog("Búsqueda", "Cliente no fue encontrado. Procede registrarlo nuevo.", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     private void resetAlertPanel() {
@@ -467,7 +510,7 @@ public class VentanaVeterinaria extends JFrame {
         String cedula           = txtCedula.getText().trim();
         String nombrePropietario = txtNombrePropietario.getText().trim();
         String direccion        = txtDireccion.getText().trim();
-        boolean embarazada      = chkEmbarazada.isSelected();
+        boolean embarazada      = chkEmbarazadas.isSelected();
         boolean ninos           = chkNinos.isSelected();
 
         Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, ninos, embarazada);
@@ -527,7 +570,7 @@ public class VentanaVeterinaria extends JFrame {
             String sql =
                     "SELECT d.fecha, d.nivel_riesgo, " +
                             "m.nombre AS mascota, m.especie, " +
-                            "p.nombre AS propietario, " +
+                            "p.nombre AS propietario, p.cedula, p.direccion, " +
                             "par.nombre AS parasito " +
                             "FROM Diagnosticos d " +
                             "JOIN Mascotas m ON d.id_mascota = m.id " +
@@ -538,16 +581,18 @@ public class VentanaVeterinaria extends JFrame {
             Statement stmt = con.createStatement();
             ResultSet rs   = stmt.executeQuery(sql);
 
-            String[] cols = {"Fecha", "Riesgo", "Mascota", "Especie", "Parásito", "Propietario"};
+            String[] cols = {"Fecha", "Riesgo", "Cédula", "Propietario", "Dirección", "Mascota", "Especie", "Parásito"};
             java.util.List<Object[]> rows = new java.util.ArrayList<>();
             while (rs.next()) {
                 rows.add(new Object[]{
                         rs.getString("fecha"),
                         rs.getString("nivel_riesgo") != null ? rs.getString("nivel_riesgo") : "N/A",
+                        rs.getString("cedula") != null ? rs.getString("cedula") : "-",
+                        rs.getString("propietario"),
+                        rs.getString("direccion") != null ? rs.getString("direccion") : "-",
                         rs.getString("mascota"),
                         rs.getString("especie"),
-                        rs.getString("parasito"),
-                        rs.getString("propietario")
+                        rs.getString("parasito")
                 });
             }
 
@@ -582,9 +627,21 @@ public class VentanaVeterinaria extends JFrame {
             table.getTableHeader().setForeground(accentTeal);
             table.getTableHeader().setFont(FONT_SECTION);
             table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor));
+            
+            // Mejorar estética ajustando el ancho de cada columna individualmente
+            if(table.getColumnModel().getColumnCount() == 8) {
+                table.getColumnModel().getColumn(0).setPreferredWidth(85);  // Fecha
+                table.getColumnModel().getColumn(1).setPreferredWidth(80);  // Riesgo
+                table.getColumnModel().getColumn(2).setPreferredWidth(90);  // Cédula
+                table.getColumnModel().getColumn(3).setPreferredWidth(125); // Propietario
+                table.getColumnModel().getColumn(4).setPreferredWidth(140); // Dirección
+                table.getColumnModel().getColumn(5).setPreferredWidth(85);  // Mascota
+                table.getColumnModel().getColumn(6).setPreferredWidth(70);  // Especie
+                table.getColumnModel().getColumn(7).setPreferredWidth(150); // Parásito
+            }
 
             JScrollPane scroll = new JScrollPane(table);
-            scroll.setPreferredSize(new Dimension(800, 350));
+            scroll.setPreferredSize(new Dimension(950, 380));
             scroll.setBackground(bgCard);
             scroll.getViewport().setBackground(bgCard);
             scroll.setBorder(BorderFactory.createLineBorder(borderColor));

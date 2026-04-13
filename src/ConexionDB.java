@@ -65,7 +65,7 @@ public class ConexionDB {
             } catch (SQLException ignore) {}
 
             try {
-                stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT UNIQUE");
+                stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT");
             } catch (SQLException ignore) {}
 
             try {
@@ -116,6 +116,27 @@ public class ConexionDB {
         return lista;
     }
 
+    public static String obtenerEstadisticasEpidemiologicas() {
+        StringBuilder stats = new StringBuilder();
+        try (Connection con = getConexion(); Statement stmt = con.createStatement()) {
+            ResultSet rsEval = stmt.executeQuery("SELECT COUNT(*) FROM Mascotas");
+            int totalMascotas = rsEval.next() ? rsEval.getInt(1) : 0;
+            
+            ResultSet rsCrit = stmt.executeQuery("SELECT COUNT(*) FROM Diagnosticos WHERE nivel_riesgo = 'CRITICO'");
+            int totalCriticos = rsCrit.next() ? rsCrit.getInt(1) : 0;
+            
+            ResultSet rsPar = stmt.executeQuery("SELECT p.nombre, COUNT(d.id_parasito) as cant FROM Diagnosticos d JOIN Parasitos p ON d.id_parasito = p.id GROUP BY p.nombre ORDER BY cant DESC LIMIT 1");
+            String parasitoComun = rsPar.next() ? rsPar.getString(1) : "N/A";
+            
+            stats.append("Total de mascotas evaluadas: ").append(totalMascotas).append("\n\n");
+            stats.append("Total de diagnósticos críticos: ").append(totalCriticos).append("\n\n");
+            stats.append("Parásito predominante en clínica: ").append(parasitoComun);
+        } catch (SQLException e) {
+            return "Error calculando estadísticas: " + e.getMessage();
+        }
+        return stats.toString();
+    }
+
     public static int upsertPropietario(Propietario p) throws SQLException {
         try (Connection con = getConexion()) {
             PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Propietarios WHERE cedula = ?");
@@ -146,6 +167,25 @@ public class ConexionDB {
             }
         }
         throw new SQLException("Fallo al upsertar propietario");
+    }
+
+    public static Propietario buscarPropietarioPorCedula(String cedula) {
+        try (Connection con = getConexion()) {
+            PreparedStatement ps = con.prepareStatement("SELECT * FROM Propietarios WHERE cedula = ?");
+            ps.setString(1, cedula);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Propietario(
+                        rs.getInt("id"),
+                        rs.getString("cedula"),
+                        rs.getString("nombre"),
+                        rs.getString("direccion"),
+                        rs.getInt("tiene_ninos") == 1,
+                        rs.getInt("hay_embarazadas") == 1
+                );
+            }
+        } catch (SQLException ignore) {}
+        return null;
     }
 
     public static int upsertMascota(Mascota m) throws SQLException {
