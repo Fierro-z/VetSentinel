@@ -14,6 +14,7 @@ public class Mascota {
     }
 
     public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
     public String getNombre() { return nombre; }
     public String getEspecie() { return especie; }
     public int getEdad() { return edad; }

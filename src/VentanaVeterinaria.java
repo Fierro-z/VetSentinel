@@ -43,6 +43,7 @@ public class VentanaVeterinaria extends JFrame {
     private JTextField       txtEdadMascota;
     private JComboBox<String> cbEspecie;
     private JComboBox<Parasito> cbParasito;
+    private JTextField       txtCedula;
     private JTextField       txtNombrePropietario;
     private JTextField       txtDireccion;
     private JCheckBox        chkEmbarazada;
@@ -69,8 +70,11 @@ public class VentanaVeterinaria extends JFrame {
         root.add(buildCenter(), BorderLayout.CENTER);
 
         setContentPane(root);
-        setPreferredSize(new Dimension(1100, 850));
-        setMinimumSize(new Dimension(1000, 800));
+        // Ancho: 1100 | Alto: 950 (Aumentado hacia abajo)
+        setPreferredSize(new Dimension(1100, 950));
+
+        // Ancho mínimo: 1000 | Alto mínimo: 900
+        setMinimumSize(new Dimension(1000, 900));
         pack();
         setLocationRelativeTo(null);
 
@@ -277,6 +281,8 @@ public class VentanaVeterinaria extends JFrame {
         card.add(Box.createVerticalStrut(10));
         card.add(sectionLabel("DATOS DEL PROPIETARIO"));
         card.add(Box.createVerticalStrut(5));
+        card.add(fieldRow("Cédula/Documento", txtCedula = createTextField("Ej: 1020304050")));
+        card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Nombre completo", txtNombrePropietario = createTextField("Nombre del dueño")));
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Dirección del hogar", txtDireccion = createTextField("Calle, barrio, ciudad")));
@@ -443,9 +449,10 @@ public class VentanaVeterinaria extends JFrame {
 
     private void guardarYMostrarAlerta() {
         if (txtNombreMascota.getText().trim().isEmpty()
+                || txtCedula.getText().trim().isEmpty()
                 || txtNombrePropietario.getText().trim().isEmpty()) {
             showStyledDialog("Campos vacíos",
-                    "Por favor completa el nombre de la mascota y del propietario.",
+                    "Por favor completa la cédula, el nombre de la mascota y del propietario.",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -457,12 +464,13 @@ public class VentanaVeterinaria extends JFrame {
         catch (NumberFormatException ignored) {}
         Parasito selectedParasito = (Parasito) cbParasito.getSelectedItem();
         String nombreParasito = selectedParasito.getNombre();
+        String cedula           = txtCedula.getText().trim();
         String nombrePropietario = txtNombrePropietario.getText().trim();
         String direccion        = txtDireccion.getText().trim();
         boolean embarazada      = chkEmbarazada.isSelected();
         boolean ninos           = chkNinos.isSelected();
 
-        Propietario propietario = new Propietario(0, nombrePropietario, direccion, ninos, embarazada);
+        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, ninos, embarazada);
         Mascota     mascota     = new Mascota(0, nombreMascota, especie, edad, propietario);
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");
@@ -476,8 +484,19 @@ public class VentanaVeterinaria extends JFrame {
         else if (alerta.contains("NIVEL: MODERADO")) nivelBD = "MODERADO";
 
         mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
-        guardarEnBD(nombrePropietario, direccion, ninos, embarazada,
-                nombreMascota, especie, edad, nombreParasito, nivelBD);
+        
+        try {
+            int idProp = ConexionDB.upsertPropietario(propietario);
+            propietario.setId(idProp);
+            mascota.getPropietario().setId(idProp);
+            
+            int idMasc = ConexionDB.upsertMascota(mascota);
+            mascota.setId(idMasc);
+            
+            ConexionDB.insertarDiagnostico(idMasc, selectedParasito.getId(), nivelBD);
+        } catch (java.sql.SQLException ex) {
+            showStyledDialog("Error al guardar en BD", ex.getMessage(), JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void mostrarAlertaEnPanel(String alerta, String mascota, String especie, String parasito) {
@@ -501,48 +520,6 @@ public class VentanaVeterinaria extends JFrame {
         alertTextArea.setForeground(textPrimary);
         alertTextArea.setText(alerta);
         alertTextArea.setCaretPosition(0);
-    }
-
-    private void guardarEnBD(String nombreProp, String dir, boolean ninos, boolean embarazada,
-                             String nombreMascota, String especie, int edad, String parasito, String nivelRiesgo) {
-        try (Connection con = ConexionDB.getConexion()) {
-            PreparedStatement psProp = con.prepareStatement(
-                    "INSERT INTO Propietarios (nombre, direccion, tiene_ninos, hay_embarazadas) VALUES (?,?,?,?)",
-                    Statement.RETURN_GENERATED_KEYS);
-            psProp.setString(1, nombreProp);
-            psProp.setString(2, dir);
-            psProp.setInt(3, ninos ? 1 : 0);
-            psProp.setInt(4, embarazada ? 1 : 0);
-            psProp.executeUpdate();
-            ResultSet keysProp = psProp.getGeneratedKeys();
-            int idProp = keysProp.next() ? keysProp.getInt(1) : 1;
-
-            PreparedStatement psMasc = con.prepareStatement(
-                    "INSERT INTO Mascotas (nombre, especie, edad, id_propietario) VALUES (?,?,?,?)",
-                    Statement.RETURN_GENERATED_KEYS);
-            psMasc.setString(1, nombreMascota);
-            psMasc.setString(2, especie);
-            psMasc.setInt(3, edad);
-            psMasc.setInt(4, idProp);
-            psMasc.executeUpdate();
-            ResultSet keysMasc = psMasc.getGeneratedKeys();
-            int idMasc = keysMasc.next() ? keysMasc.getInt(1) : 1;
-
-            PreparedStatement psPar = con.prepareStatement("SELECT id FROM Parasitos WHERE nombre = ?");
-            psPar.setString(1, parasito);
-            ResultSet rsPar = psPar.executeQuery();
-            int idPar = rsPar.next() ? rsPar.getInt(1) : 1;
-
-            PreparedStatement psDiag = con.prepareStatement(
-                    "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio, nivel_riesgo) VALUES (?,?,date('now'),'Activo',?)");
-            psDiag.setInt(1, idMasc);
-            psDiag.setInt(2, idPar);
-            psDiag.setString(3, nivelRiesgo);
-            psDiag.executeUpdate();
-
-        } catch (SQLException ex) {
-            showStyledDialog("Error al guardar", ex.getMessage(), JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     private void verHistorial() {

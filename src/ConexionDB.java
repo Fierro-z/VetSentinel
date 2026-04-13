@@ -35,6 +35,7 @@ public class ConexionDB {
 
             stmt.execute("CREATE TABLE IF NOT EXISTS Propietarios (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "cedula TEXT UNIQUE," +
                     "nombre TEXT NOT NULL," +
                     "direccion TEXT," +
                     "tiene_ninos INTEGER DEFAULT 0," +
@@ -61,6 +62,10 @@ public class ConexionDB {
             // Intento seguro de migrar bases de datos existentes
             try {
                 stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT");
+            } catch (SQLException ignore) {}
+
+            try {
+                stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT UNIQUE");
             } catch (SQLException ignore) {}
 
             try {
@@ -109,5 +114,79 @@ public class ConexionDB {
             System.out.println("Error al obtener parásitos: " + e.getMessage());
         }
         return lista;
+    }
+
+    public static int upsertPropietario(Propietario p) throws SQLException {
+        try (Connection con = getConexion()) {
+            PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Propietarios WHERE cedula = ?");
+            psCheck.setString(1, p.getCedula());
+            ResultSet rs = psCheck.executeQuery();
+            if (rs.next()) {
+                int id = rs.getInt(1);
+                PreparedStatement psUpd = con.prepareStatement(
+                        "UPDATE Propietarios SET nombre = ?, direccion = ?, tiene_ninos = ?, hay_embarazadas = ? WHERE id = ?");
+                psUpd.setString(1, p.getNombre());
+                psUpd.setString(2, p.getDireccion());
+                psUpd.setInt(3, p.isTieneNinos() ? 1 : 0);
+                psUpd.setInt(4, p.isHayEmbarazadas() ? 1 : 0);
+                psUpd.setInt(5, id);
+                psUpd.executeUpdate();
+                return id;
+            } else {
+                PreparedStatement psIns = con.prepareStatement(
+                        "INSERT INTO Propietarios (cedula, nombre, direccion, tiene_ninos, hay_embarazadas) VALUES (?, ?, ?, ?, ?)");
+                psIns.setString(1, p.getCedula());
+                psIns.setString(2, p.getNombre());
+                psIns.setString(3, p.getDireccion());
+                psIns.setInt(4, p.isTieneNinos() ? 1 : 0);
+                psIns.setInt(5, p.isHayEmbarazadas() ? 1 : 0);
+                psIns.executeUpdate();
+                ResultSet keys = con.createStatement().executeQuery("SELECT last_insert_rowid()");
+                if (keys.next()) return keys.getInt(1);
+            }
+        }
+        throw new SQLException("Fallo al upsertar propietario");
+    }
+
+    public static int upsertMascota(Mascota m) throws SQLException {
+        try (Connection con = getConexion()) {
+            PreparedStatement psCheck = con.prepareStatement(
+                    "SELECT id FROM Mascotas WHERE nombre = ? AND id_propietario = ?");
+            psCheck.setString(1, m.getNombre());
+            psCheck.setInt(2, m.getPropietario().getId());
+            ResultSet rs = psCheck.executeQuery();
+            if (rs.next()) {
+                int id = rs.getInt(1);
+                PreparedStatement psUpd = con.prepareStatement(
+                        "UPDATE Mascotas SET especie = ?, edad = ? WHERE id = ?");
+                psUpd.setString(1, m.getEspecie());
+                psUpd.setInt(2, m.getEdad());
+                psUpd.setInt(3, id);
+                psUpd.executeUpdate();
+                return id;
+            } else {
+                PreparedStatement psIns = con.prepareStatement(
+                        "INSERT INTO Mascotas (nombre, especie, edad, id_propietario) VALUES (?, ?, ?, ?)");
+                psIns.setString(1, m.getNombre());
+                psIns.setString(2, m.getEspecie());
+                psIns.setInt(3, m.getEdad());
+                psIns.setInt(4, m.getPropietario().getId());
+                psIns.executeUpdate();
+                ResultSet keys = con.createStatement().executeQuery("SELECT last_insert_rowid()");
+                if (keys.next()) return keys.getInt(1);
+            }
+        }
+        throw new SQLException("Fallo al upsertar mascota");
+    }
+
+    public static void insertarDiagnostico(int idMasc, int idPar, String nivelRiesgo) throws SQLException {
+        try (Connection con = getConexion()) {
+            PreparedStatement psDiag = con.prepareStatement(
+                    "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio, nivel_riesgo) VALUES (?,?,date('now'),'Activo',?)");
+            psDiag.setInt(1, idMasc);
+            psDiag.setInt(2, idPar);
+            psDiag.setString(3, nivelRiesgo);
+            psDiag.executeUpdate();
+        }
     }
 }
