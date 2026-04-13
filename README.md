@@ -5,7 +5,7 @@
 VetSentinel es un software en Java diseñado para registrar diagnósticos veterinarios y generar **alertas automáticas** para proteger la salud de los humanos que conviven con mascotas infectadas.
 
 > [!WARNING]
-> **ESTADO DEL PROYECTO:** Este software está actualmente **en desarrollo** con fines académicos. Puede contener errores o funciones incompletas.
+> **ESTADO DEL PROYECTO:** ⚠️ Este software está actualmente **en desarrollo** con fines académicos. Puede contener errores o funciones incompletas.
 
 ---
 
@@ -14,16 +14,14 @@ VetSentinel es un software en Java diseñado para registrar diagnósticos veteri
 Las funcionalidades del sistema fueron definidas a partir de las necesidades reales de sus usuarios.
 
 **HU-01 — Registro de diagnóstico y alerta de convivencia**
-
-Como **veterinario**, quiero **registrar el diagnóstico parasitario de una mascota junto con los datos del hogar del propietario**, para que el sistema **genere automáticamente una alerta de riesgo** que indique si algún humano conviviente está en peligro de contagio.
+> Como **veterinario**, quiero **registrar el diagnóstico parasitario de una mascota junto con los datos del hogar del propietario**, para que el sistema **genere automáticamente una alerta de riesgo** que indique si algún humano conviviente está en peligro de contagio.
 
 * ✅ El veterinario ingresa nombre, especie y edad de la mascota.
 * ✅ El veterinario selecciona el parásito diagnosticado.
 * ✅ El sistema evalúa si hay niños o embarazadas en el hogar y genera una **Alerta de Convivencia** con nivel de riesgo (CRÍTICO, ALTO, MEDIO o BAJO).
 
 **HU-02 — Consulta del historial de diagnósticos**
-
-Como **veterinario**, quiero **consultar el historial completo de diagnósticos registrados**, para poder **hacer seguimiento a los casos activos de zoonosis** atendidos en la clínica.
+> Como **veterinario**, quiero **consultar el historial completo de diagnósticos registrados**, para poder **hacer seguimiento a los casos activos de zoonosis** atendidos en la clínica.
 
 * ✅ El historial muestra todos los casos ordenados del más reciente al más antiguo.
 * ✅ Cada registro incluye: fecha, mascota, parásito diagnosticado y propietario.
@@ -68,4 +66,4 @@ Asegúrate de tener Java 17 o superior instalado antes de ejecutar el proyecto.
 ---
 
 > [!NOTE]
-> Proyecto académico para las asignaturas de **Proyecto Integrador 1** y **Programación Orientada a Objetos (POO)**.
+> Proyecto académico para las asignaturas de **Proyecto Integrador 1** y **Programación Orientada a Objetos (POO2)**.
