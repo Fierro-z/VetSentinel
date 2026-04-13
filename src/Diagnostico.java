@@ -58,6 +58,7 @@ public class Diagnostico {
         return alerta;
     }
 
+    public int getId() { return id; }
     public Mascota getMascota() { return mascota; }
     public Parasito getParasito() { return parasito; }
     public String getEstadoContagio() { return estadoContagio; }
