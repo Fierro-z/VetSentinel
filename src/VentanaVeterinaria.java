@@ -42,7 +42,7 @@ public class VentanaVeterinaria extends JFrame {
     private JTextField       txtNombreMascota;
     private JTextField       txtEdadMascota;
     private JComboBox<String> cbEspecie;
-    private JComboBox<String> cbParasito;
+    private JComboBox<Parasito> cbParasito;
     private JTextField       txtNombrePropietario;
     private JTextField       txtDireccion;
     private JCheckBox        chkEmbarazada;
@@ -270,11 +270,9 @@ public class VentanaVeterinaria extends JFrame {
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
         card.add(Box.createVerticalStrut(3));
+        java.util.List<Parasito> parasitosDB = ConexionDB.obtenerTodosLosParasitos();
         card.add(fieldRow("Parásito diagnosticado",
-                cbParasito = createCombo(new String[]{
-                        "Toxoplasma gondii",
-                        "Leishmania spp",
-                        "Toxocara canis/cati"})));
+                cbParasito = createCombo(parasitosDB.toArray(new Parasito[0]))));
 
         card.add(Box.createVerticalStrut(10));
         card.add(sectionLabel("DATOS DEL PROPIETARIO"));
@@ -457,31 +455,16 @@ public class VentanaVeterinaria extends JFrame {
         int    edad             = 1;
         try { edad = Integer.parseInt(txtEdadMascota.getText().trim()); }
         catch (NumberFormatException ignored) {}
-        String nombreParasito   = cbParasito.getSelectedItem().toString();
+        Parasito selectedParasito = (Parasito) cbParasito.getSelectedItem();
+        String nombreParasito = selectedParasito.getNombre();
         String nombrePropietario = txtNombrePropietario.getText().trim();
         String direccion        = txtDireccion.getText().trim();
         boolean embarazada      = chkEmbarazada.isSelected();
         boolean ninos           = chkNinos.isSelected();
 
-        String riesgo, medidas;
-        switch (nombreParasito) {
-            case "Toxoplasma gondii":
-                riesgo  = "Transmisión congénita. Seroprevalencia 40-60% en Colombia.";
-                medidas = "No limpiar arenero sin guantes. Cocinar carne >70°C. Lavar vegetales.";
-                break;
-            case "Leishmania spp":
-                riesgo  = "Leishmaniasis cutánea. Endémica en Antioquia (INS 2025).";
-                medidas = "Control del vector Lutzomyia. Toldillos y repelente. Fumigación.";
-                break;
-            default:
-                riesgo  = "Larva migrans en niños. Prevalencia en perros 7-20% (INS).";
-                medidas = "Desparasitar cada 3 meses. Evitar que niños toquen suelo contaminado.";
-        }
-
         Propietario propietario = new Propietario(0, nombrePropietario, direccion, ninos, embarazada);
         Mascota     mascota     = new Mascota(0, nombreMascota, especie, edad, propietario);
-        Parasito    parasito    = new Parasito(0, nombreParasito, riesgo, medidas);
-        Diagnostico diagnostico = new Diagnostico(0, mascota, parasito,
+        Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");
 
         String alerta = diagnostico.evaluarRiesgoHumano();

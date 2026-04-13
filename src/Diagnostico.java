@@ -23,38 +23,18 @@ public class Diagnostico {
         alerta += "Dirección: " + dueno.getDireccion() + "\n";
         alerta += "Parásito detectado: " + p + "\n\n";
 
-        if (p.equals("Toxoplasma gondii") && mascota.getEspecie().equalsIgnoreCase("Gato")) {
-            if (dueno.isHayEmbarazadas()) {
-                alerta += "NIVEL: CRITICO\n";
-                alerta += "Hay embarazada en el hogar con gato positivo a Toxoplasma.\n";
-                alerta += "Riesgo de TOXOPLASMOSIS CONGENITA (daño fetal).\n\n";
-            } else {
-                alerta += "NIVEL: MEDIO\n";
-                alerta += "Gato positivo a Toxoplasma. Mantener higiene.\n\n";
-            }
-        } else if (p.equals("Toxocara canis/cati")) {
-            if (dueno.isTieneNinos()) {
-                alerta += "NIVEL: ALTO\n";
-                alerta += "Hay niños en el hogar. Riesgo de LARVA MIGRANS VISCERAL.\n";
-                alerta += "Vigilar GEOFAGIA (niños que comen tierra).\n\n";
-            } else {
-                alerta += "NIVEL: MODERADO\n";
-                alerta += "Desparasitar la mascota de inmediato.\n\n";
-            }
-        } else if (p.equals("Leishmania spp")) {
+        if (parasito.isAlertaEmbarazo() && dueno.isHayEmbarazadas()) {
+            alerta += "NIVEL: CRITICO\n";
+            alerta += "Riesgo crítico por factor embarazo: " + parasito.getRiesgoPrincipal() + "\n\n";
+        } else if (parasito.isAlertaNinos() && dueno.isTieneNinos()) {
             alerta += "NIVEL: ALTO\n";
-            alerta += "El perro es RESERVORIO de Leishmaniasis cutánea.\n";
-            alerta += "El vector (Lutzomyia) puede picar a humanos del hogar.\n";
-            if (dueno.isTieneNinos()) {
-                alerta += "ATENCION: Niños en el hogar, usar repelente y toldillos.\n";
-            }
-            alerta += "\n";
+            alerta += "Riesgo elevado por presencia de menores: " + parasito.getRiesgoPrincipal() + "\n\n";
         } else {
-            alerta += "NIVEL: BAJO\n";
-            alerta += "No se detectaron factores de riesgo críticos.\n\n";
+            alerta += "NIVEL: MEDIO\n";
+            alerta += "Riesgo general: " + parasito.getRiesgoPrincipal() + "\n\n";
         }
 
-        alerta += "ACCIONES: " + parasito.getMedidasPreventivas();
+        alerta += "ACCIONES RECOMENDADAS:\n" + parasito.getMedidasPreventivas();
         return alerta;
     }
 
