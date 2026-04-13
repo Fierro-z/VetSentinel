@@ -5,7 +5,7 @@
 VetSentinel es un software en Java diseñado para registrar diagnósticos veterinarios y generar **alertas automáticas** para proteger la salud de los humanos que conviven con mascotas infectadas.
 
 > [!WARNING]
-> **ESTADO DEL PROYECTO:** ⚠️ Este software está actualmente **en desarrollo** con fines académicos. Puede contener errores o funciones incompletas.
+> ⚠️ Este software está actualmente **en desarrollo** con fines académicos. Puede contener errores o funciones incompletas.
 
 ---
 
@@ -58,6 +58,19 @@ El sistema organiza y relaciona la información en:
 2. **Mascotas:** Datos clínicos (edad, especie) vinculados a un Propietario (FK).
 3. **Parásitos:** Catálogo de enfermedades que incluye banderas lógicas (`alerta_embarazo`, `alerta_ninos`) y medidas preventivas.
 4. **Diagnósticos:** Historial transaccional que une Mascota, Parásito, Fecha y Nivel de Riesgo calculado.
+
+## 🦠 Glosario de Enfermedades Parasitarias
+
+### 🐱 Toxoplasmosis
+Infección causada por el parásito *Toxoplasma gondii*. Se transmite por heces de gatos, carne mal cocida o alimentos/agua contaminados. Es muy común y peligrosa especialmente para mujeres embarazadas porque puede afectar al bebé.
+
+### 🦟 Leishmaniasis
+Enfermedad parasitaria transmitida por la picadura de un insecto. En Colombia es frecuente la forma cutánea, que produce lesiones en la piel y es común en zonas rurales y selváticas.
+
+### 🐶 Toxocariasis
+Infección causada por parásitos de perros y gatos. Las personas se contagian al ingerir huevos presentes en suelo contaminado, especialmente en parques. Es común en niños.
+
+---
 
 ## ▶️ Cómo ejecutar
 
