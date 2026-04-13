@@ -39,7 +39,6 @@ Las funcionalidades del sistema fueron definidas a partir de las necesidades rea
 ---
 
 ## ✨ Características Principales
-* **Diseño Moderno y Adaptable (UI/UX):** Interfaz gráfica responsiva con soporte nativo para **Modo Claro ☀️ y Modo Oscuro 🌙** en tiempo real.
 * **Alertas Inteligentes impulsadas por BD:** Las reglas de riesgo clínico (ej. peligro para embarazadas) no están *hardcodeadas* en Java, sino que se leen dinámicamente desde la base de datos, permitiendo escalar el sistema fácilmente.
 * **Evita Duplicados (Integridad de Datos):** Sistema inteligente de validación por Cédula que vincula historiales a dueños existentes.
 * **100% Portable:** No requiere instalación de servidores (funciona con **SQLite** con migraciones automáticas).
