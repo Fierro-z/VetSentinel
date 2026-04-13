@@ -211,43 +211,24 @@ public class VentanaVeterinaria extends JFrame {
         leftContainer.setLayout(new BoxLayout(leftContainer, BoxLayout.Y_AXIS));
         leftContainer.setOpaque(false);
 
-        // Logo + título (reubicados)
-        JPanel leftTitles = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
-        leftTitles.setOpaque(false);
-        JLabel icon = new JLabel("🐾");
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
-        updaters.add(() -> icon.setForeground(textPrimary));
+        // Badge de estado movido arriba a la izquierda para ahorrar mucho espacio vertical
+        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        topRow.setOpaque(false);
+        topRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JPanel titles = new JPanel(new GridLayout(2, 1, 0, 2));
-        titles.setOpaque(false);
-        JLabel title = makeLabel("VetSentinel", FONT_TITLE, () -> accentTeal);
-        JLabel sub   = makeLabel("Sistema de Vigilancia Zoonótica — INS Colombia", FONT_LABEL, () -> textMuted);
-        titles.add(title);
-        titles.add(sub);
-        leftTitles.add(icon);
-        leftTitles.add(titles);
-
-        // Badge de estado
         JPanel badge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         badge.setOpaque(false);
         JLabel dot = new JLabel("●");
         dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        updaters.add(() -> {
-            dot.setForeground(okGreen);
-            icon.setForeground(textPrimary); // repinta icono main
-        });
+        updaters.add(() -> dot.setForeground(okGreen));
         JLabel status = makeLabel("Sistema activo", FONT_LABEL, () -> textMuted);
         badge.add(dot);
         badge.add(status);
-
-        JPanel topRow = new JPanel(new BorderLayout());
-        topRow.setOpaque(false);
-        topRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        topRow.add(leftTitles, BorderLayout.WEST);
-        topRow.add(badge, BorderLayout.EAST);
+        
+        topRow.add(badge);
 
         leftContainer.add(topRow);
-        leftContainer.add(Box.createVerticalStrut(15));
+        leftContainer.add(Box.createVerticalStrut(5));
         
         JPanel formPanel = buildFormPanel();
         formPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -297,6 +278,7 @@ public class VentanaVeterinaria extends JFrame {
 
         JPanel riskRow = new JPanel(new GridLayout(1, 2, 12, 0));
         riskRow.setOpaque(false);
+        riskRow.setAlignmentX(Component.LEFT_ALIGNMENT); 
         // Garantizar que layout no se auto-oculte por BoxLayout: SIN restricciones MaximumSize estrictas!
         riskRow.add(riskCard("🤰", "Mujer embarazada", chkEmbarazada = createCheckBox()));
         riskRow.add(riskCard("👶", "Niños menores",    chkNinos      = createCheckBox()));
@@ -312,6 +294,7 @@ public class VentanaVeterinaria extends JFrame {
     private JPanel buildButtonRow() {
         JPanel row = new JPanel(new GridLayout(1, 2, 10, 0));
         row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         btnGuardar = createButton("Guardar y Generar Alerta", () -> dangerRed);
         btnVerHistorial = createButton("Ver Historial", () -> accentBlue);
@@ -389,16 +372,41 @@ public class VentanaVeterinaria extends JFrame {
             }
         });
 
-        // Footer con fuente
-        JLabel footer = makeLabel("Fuente: INS Colombia BES SE26-2025", FONT_LABEL, () -> textMuted);
-        footer.setHorizontalAlignment(SwingConstants.RIGHT);
+        // Footer interactivo con logo reubicado a la esquina inferior derecha
+        JPanel footerRow = new JPanel(new BorderLayout());
+        footerRow.setOpaque(false);
+        
+        JLabel footer = makeLabel("Fuente: INS Colombia BES SE26-2025", FONT_LABEL.deriveFont(10f), () -> textMuted);
+        footer.setVerticalAlignment(SwingConstants.BOTTOM);
+        
+        JPanel rightTitles = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        rightTitles.setOpaque(false);
+        
+        JPanel titles = new JPanel(new GridLayout(2, 1, 0, 0));
+        titles.setOpaque(false);
+        JLabel title = makeLabel("VetSentinel", FONT_TITLE.deriveFont(14f), () -> accentTeal);
+        title.setHorizontalAlignment(SwingConstants.RIGHT);
+        JLabel sub   = makeLabel("Vigilancia Zoonótica INS", FONT_LABEL.deriveFont(10f), () -> textMuted);
+        sub.setHorizontalAlignment(SwingConstants.RIGHT);
+        titles.add(title);
+        titles.add(sub);
+        
+        JLabel icon = new JLabel("🐾");
+        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+        updaters.add(() -> icon.setForeground(textPrimary));
+        
+        rightTitles.add(titles);
+        rightTitles.add(icon);
+        
+        footerRow.add(footer, BorderLayout.WEST);
+        footerRow.add(rightTitles, BorderLayout.EAST);
 
         JPanel mainBody = new JPanel(new BorderLayout(0, 8));
         mainBody.setOpaque(false);
         mainBody.setBorder(new EmptyBorder(8, 0, 0, 0));
         mainBody.add(sep,    BorderLayout.NORTH);
         mainBody.add(scroll, BorderLayout.CENTER);
-        mainBody.add(footer, BorderLayout.SOUTH);
+        mainBody.add(footerRow, BorderLayout.SOUTH);
         
         alertPanel.add(alertHeader, BorderLayout.NORTH);
         alertPanel.add(mainBody, BorderLayout.CENTER);
