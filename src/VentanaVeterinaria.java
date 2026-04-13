@@ -485,9 +485,16 @@ public class VentanaVeterinaria extends JFrame {
                 java.time.LocalDate.now().toString(), "Activo");
 
         String alerta = diagnostico.evaluarRiesgoHumano();
+        
+        String nivelBD = "BAJO";
+        if (alerta.contains("NIVEL: CRITICO")) nivelBD = "CRITICO";
+        else if (alerta.contains("NIVEL: ALTO")) nivelBD = "ALTO";
+        else if (alerta.contains("NIVEL: MEDIO")) nivelBD = "MEDIO";
+        else if (alerta.contains("NIVEL: MODERADO")) nivelBD = "MODERADO";
+
         mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
         guardarEnBD(nombrePropietario, direccion, ninos, embarazada,
-                nombreMascota, especie, edad, nombreParasito);
+                nombreMascota, especie, edad, nombreParasito, nivelBD);
     }
 
     private void mostrarAlertaEnPanel(String alerta, String mascota, String especie, String parasito) {
@@ -514,7 +521,7 @@ public class VentanaVeterinaria extends JFrame {
     }
 
     private void guardarEnBD(String nombreProp, String dir, boolean ninos, boolean embarazada,
-                             String nombreMascota, String especie, int edad, String parasito) {
+                             String nombreMascota, String especie, int edad, String parasito, String nivelRiesgo) {
         try (Connection con = ConexionDB.getConexion()) {
             PreparedStatement psProp = con.prepareStatement(
                     "INSERT INTO Propietarios (nombre, direccion, tiene_ninos, hay_embarazadas) VALUES (?,?,?,?)",
@@ -544,9 +551,10 @@ public class VentanaVeterinaria extends JFrame {
             int idPar = rsPar.next() ? rsPar.getInt(1) : 1;
 
             PreparedStatement psDiag = con.prepareStatement(
-                    "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio) VALUES (?,?,date('now'),'Activo')");
+                    "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio, nivel_riesgo) VALUES (?,?,date('now'),'Activo',?)");
             psDiag.setInt(1, idMasc);
             psDiag.setInt(2, idPar);
+            psDiag.setString(3, nivelRiesgo);
             psDiag.executeUpdate();
 
         } catch (SQLException ex) {
@@ -557,7 +565,7 @@ public class VentanaVeterinaria extends JFrame {
     private void verHistorial() {
         try (Connection con = ConexionDB.getConexion()) {
             String sql =
-                    "SELECT d.fecha, d.estado_contagio, " +
+                    "SELECT d.fecha, d.nivel_riesgo, " +
                             "m.nombre AS mascota, m.especie, " +
                             "p.nombre AS propietario, " +
                             "par.nombre AS parasito " +
@@ -570,12 +578,12 @@ public class VentanaVeterinaria extends JFrame {
             Statement stmt = con.createStatement();
             ResultSet rs   = stmt.executeQuery(sql);
 
-            String[] cols = {"Fecha", "Estado", "Mascota", "Especie", "Parásito", "Propietario"};
+            String[] cols = {"Fecha", "Riesgo", "Mascota", "Especie", "Parásito", "Propietario"};
             java.util.List<Object[]> rows = new java.util.ArrayList<>();
             while (rs.next()) {
                 rows.add(new Object[]{
                         rs.getString("fecha"),
-                        rs.getString("estado_contagio"),
+                        rs.getString("nivel_riesgo") != null ? rs.getString("nivel_riesgo") : "N/A",
                         rs.getString("mascota"),
                         rs.getString("especie"),
                         rs.getString("parasito"),
@@ -591,6 +599,15 @@ public class VentanaVeterinaria extends JFrame {
                     Component c = super.prepareRenderer(r, row, col);
                     c.setBackground(row % 2 == 0 ? bgCard : bgPanel);
                     c.setForeground(textPrimary);
+                    
+                    if (col == 1) { // RIESGO column
+                        String v = getValueAt(row, col).toString();
+                        if ("CRITICO".equals(v)) c.setForeground(dangerRed);
+                        else if ("ALTO".equals(v) || "MODERADO".equals(v)) c.setForeground(warnOrange);
+                        else if ("MEDIO".equals(v)) c.setForeground(new Color(230, 180, 50));
+                        else if ("BAJO".equals(v)) c.setForeground(okGreen);
+                    }
+                    
                     ((JComponent)c).setBorder(new EmptyBorder(6, 10, 6, 10));
                     return c;
                 }

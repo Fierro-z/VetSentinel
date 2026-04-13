@@ -48,8 +48,16 @@ public class ConexionDB {
                     "id_parasito INTEGER," +
                     "fecha TEXT," +
                     "estado_contagio TEXT," +
+                    "nivel_riesgo TEXT," +
                     "FOREIGN KEY (id_mascota) REFERENCES Mascotas(id)," +
                     "FOREIGN KEY (id_parasito) REFERENCES Parasitos(id))");
+
+            // Intento seguro de migrar bases de datos existentes
+            try {
+                stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT");
+            } catch (SQLException ignore) {
+                // Falla silenciosamente si la columna 'nivel_riesgo' ya fue añadida
+            }
 
             // Insertar parásitos base solo si la tabla está vacía
             var rs = stmt.executeQuery("SELECT COUNT(*) FROM Parasitos");
