@@ -9,25 +9,34 @@ skinparam class {
 }
 
 class Main {
-    + main(args: String[]) : void
+    + {static} main(args: String[]) : void
 }
 
 class ConexionDB {
-    - URL : String = "jdbc:sqlite:vetsentimel.db"
+    - {static} URL : String
     --
     + {static} getConexion() : Connection
     + {static} inicializarBD() : void
+    + {static} obtenerTodosLosParasitos() : List<Parasito>
+    + {static} obtenerEstadisticasEpidemiologicas() : String
+    + {static} upsertPropietario(p: Propietario) : int
+    + {static} buscarPropietarioPorCedula(cedula: String) : Propietario
+    + {static} upsertMascota(m: Mascota) : int
+    + {static} insertarDiagnostico(idMasc: int, idPar: int, nivelRiesgo: String) : void
 }
 
 class Propietario {
     - id : int
+    - cedula : String
     - nombre : String
     - direccion : String
     - tieneNinos : boolean
     - hayEmbarazadas : boolean
     --
-    + Propietario(id, nombre, direccion, tieneNinos, hayEmbarazadas)
+    + Propietario(id, cedula, nombre, direccion, tieneNinos, hayEmbarazadas)
     + getId() : int
+    + setId(id: int) : void
+    + getCedula() : String
     + getNombre() : String
     + getDireccion() : String
     + isTieneNinos() : boolean
@@ -43,6 +52,7 @@ class Mascota {
     --
     + Mascota(id, nombre, especie, edad, propietario)
     + getId() : int
+    + setId(id: int) : void
     + getNombre() : String
     + getEspecie() : String
     + getEdad() : int
@@ -54,12 +64,17 @@ class Parasito {
     - nombre : String
     - riesgoPrincipal : String
     - medidasPreventivas : String
+    - alertaEmbarazo : boolean
+    - alertaNinos : boolean
     --
-    + Parasito(id, nombre, riesgoPrincipal, medidasPreventivas)
+    + Parasito(id, nombre, riesgoPrincipal, medidasPreventivas, alertaEmbarazo, alertaNinos)
     + getId() : int
     + getNombre() : String
     + getRiesgoPrincipal() : String
     + getMedidasPreventivas() : String
+    + isAlertaEmbarazo() : boolean
+    + isAlertaNinos() : boolean
+    + toString() : String
 }
 
 class Diagnostico {
@@ -71,6 +86,7 @@ class Diagnostico {
     --
     + Diagnostico(id, mascota, parasito, fecha, estadoContagio)
     + evaluarRiesgoHumano() : String
+    + getId() : int
     + getMascota() : Mascota
     + getParasito() : Parasito
     + getFecha() : String
@@ -78,21 +94,41 @@ class Diagnostico {
 }
 
 class VentanaVeterinaria {
+    - isDarkMode : boolean
+    - updaters : List<Runnable>
     - txtNombreMascota : JTextField
     - txtEdadMascota : JTextField
-    - cbEspecie : JComboBox
-    - cbParasito : JComboBox
+    - cbEspecie : JComboBox<String>
+    - cbParasito : JComboBox<Parasito>
+    - txtCedula : JTextField
     - txtNombrePropietario : JTextField
     - txtDireccion : JTextField
-    - chkEmbarazada : JCheckBox
+    - chkEmbarazadas : JCheckBox
     - chkNinos : JCheckBox
     - btnGuardar : JButton
     - btnVerHistorial : JButton
+    - btnEstadisticas : JButton
+    - alertPanel : JPanel
+    - alertIconLabel : JLabel
+    - alertNivelLabel : JLabel
+    - alertTextArea : JTextArea
+    - alertMascotaLabel : JLabel
     --
     + VentanaVeterinaria()
+    - aplicarColores(oscuro: boolean) : void
+    - alternarTema() : void
+    - actualizarUI() : void
+    - buildHeader() : JPanel
+    - buildCenter() : JPanel
+    - buildFormPanel() : JPanel
+    - buildAlertPanel() : JPanel
+    - wireListeners() : void
+    - buscarClienteAutocompletar() : void
     - guardarYMostrarAlerta() : void
-    - guardarEnBD(...) : void
+    - mostrarAlertaEnPanel(alerta: String, mascota: String, especie: String, parasito: String) : void
     - verHistorial() : void
+    - verEstadisticas() : void
+    - resetAlertPanel() : void
 }
 
 ' Relaciones
