@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 public class VentanaVeterinaria extends JFrame {
 
-    private boolean isDarkMode = true;
+    private boolean isDarkMode = false;
     private List<Runnable> updaters = new ArrayList<>();
 
     // ── Paleta de colores Dinámica ─────────────────────────────────────────────
@@ -154,35 +154,7 @@ public class VentanaVeterinaria extends JFrame {
         imageContainer.setLayout(new BorderLayout());
         imageContainer.setBorder(new EmptyBorder(15, 25, 15, 25));
 
-        btnThemeToggle = new JButton() {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(0, 0, 0, 180)); 
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 36, 36);
-                
-                g2.setColor(Color.WHITE);
-                g2.setFont(FONT_BTN);
-                FontMetrics fm = g2.getFontMetrics();
-                String text = isDarkMode ? "☀️ Modo Claro" : "🌙 Modo Oscuro";
-                int x = (getWidth() - fm.stringWidth(text)) / 2;
-                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
-                g2.drawString(text, x, y);
-                g2.dispose();
-            }
-        };
-        btnThemeToggle.setFocusPainted(false);
-        btnThemeToggle.setContentAreaFilled(false);
-        btnThemeToggle.setBorderPainted(false);
-        btnThemeToggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnThemeToggle.setPreferredSize(new Dimension(135, 36));
-        btnThemeToggle.addActionListener(e -> alternarTema());
-        
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        rightPanel.setOpaque(false);
-        rightPanel.add(btnThemeToggle);
-
-        imageContainer.add(rightPanel, BorderLayout.EAST);
+        // Retiramos el botón de tema del banner (se mueve arriba del panel derecho)
         headerPanel.add(imageContainer, BorderLayout.CENTER);
         return headerPanel;
     }
@@ -211,24 +183,9 @@ public class VentanaVeterinaria extends JFrame {
         leftContainer.setLayout(new BoxLayout(leftContainer, BoxLayout.Y_AXIS));
         leftContainer.setOpaque(false);
 
-        // Badge de estado movido arriba a la izquierda para ahorrar mucho espacio vertical
-        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        topRow.setOpaque(false);
-        topRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        JPanel badge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        badge.setOpaque(false);
-        JLabel dot = new JLabel("●");
-        dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        updaters.add(() -> dot.setForeground(okGreen));
-        JLabel status = makeLabel("Sistema activo", FONT_LABEL, () -> textMuted);
-        badge.add(dot);
-        badge.add(status);
-        
-        topRow.add(badge);
-
-        leftContainer.add(topRow);
-        leftContainer.add(Box.createVerticalStrut(5));
+        // Sin badge en la izquierda, todo el espacio vertical de la izquierda pertenece ahora al formulario.
+        // Solo un pequeño margen superior para evitar que el título se pegue a arriba.
+        leftContainer.add(Box.createVerticalStrut(10));
         
         JPanel formPanel = buildFormPanel();
         formPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -237,9 +194,63 @@ public class VentanaVeterinaria extends JFrame {
         center.add(leftContainer, gbc);
 
         gbc.gridx = 1;
-        gbc.insets = new Insets(50, 0, 0, 0); // Mismo offset para alinear verticalmente
+        gbc.insets = new Insets(0, 0, 0, 0); // Modificado para integrar los botones arriba
         gbc.weightx = 0.52;
-        center.add(buildAlertPanel(), gbc);
+        
+        JPanel rightContainer = new JPanel(new BorderLayout());
+        rightContainer.setOpaque(false);
+        
+        // Fila superior derecha ("Sistema activo" y Botón Tema)
+        JPanel topRightRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        topRightRow.setOpaque(false);
+
+        JPanel badge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        badge.setOpaque(false);
+        JLabel dot = new JLabel("●");
+        dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        updaters.add(() -> dot.setForeground(okGreen));
+        JLabel status = makeLabel("Sistema activo", FONT_LABEL, () -> textMuted);
+        badge.add(dot);
+        badge.add(status);
+
+        btnThemeToggle = new JButton() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(isDarkMode ? bgCard : new Color(220, 228, 235)); 
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 36, 36);
+                
+                g2.setColor(textPrimary);
+                g2.setFont(FONT_BTN);
+                FontMetrics fm = g2.getFontMetrics();
+                String text = isDarkMode ? "☀️ Modo Claro" : "🌙 Modo Oscuro";
+                int x = (getWidth() - fm.stringWidth(text)) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(text, x, y);
+                g2.dispose();
+            }
+        };
+        updaters.add(btnThemeToggle::repaint);
+        btnThemeToggle.setFocusPainted(false);
+        btnThemeToggle.setContentAreaFilled(false);
+        btnThemeToggle.setBorderPainted(false);
+        btnThemeToggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnThemeToggle.setPreferredSize(new Dimension(135, 36));
+        btnThemeToggle.addActionListener(e -> alternarTema());
+
+        topRightRow.add(badge);
+        topRightRow.add(btnThemeToggle);
+
+        rightContainer.add(topRightRow, BorderLayout.NORTH);
+        
+        JPanel paddingAlert = new JPanel(new BorderLayout());
+        paddingAlert.setOpaque(false);
+        paddingAlert.setBorder(new EmptyBorder(14, 0, 0, 0)); 
+        paddingAlert.add(buildAlertPanel(), BorderLayout.CENTER);
+        
+        rightContainer.add(paddingAlert, BorderLayout.CENTER);
+
+        center.add(rightContainer, gbc);
 
         return center;
     }
