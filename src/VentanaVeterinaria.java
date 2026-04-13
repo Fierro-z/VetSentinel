@@ -5,22 +5,28 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 public class VentanaVeterinaria extends JFrame {
 
-    // ── Paleta de colores ──────────────────────────────────────────────────────
-    private static final Color BG_DARK       = new Color(13,  17,  23);
-    private static final Color BG_PANEL      = new Color(22,  30,  40);
-    private static final Color BG_CARD       = new Color(30,  41,  55);
-    private static final Color BG_INPUT      = new Color(18,  24,  33);
-    private static final Color ACCENT_TEAL   = new Color(20, 184, 166);
-    private static final Color ACCENT_BLUE   = new Color(56, 139, 253);
-    private static final Color DANGER_RED    = new Color(220,  53,  69);
-    private static final Color WARN_ORANGE   = new Color(255, 152,   0);
-    private static final Color OK_GREEN      = new Color( 40, 167,  69);
-    private static final Color TEXT_PRIMARY  = new Color(230, 237, 243);
-    private static final Color TEXT_MUTED    = new Color(110, 130, 150);
-    private static final Color BORDER_COLOR  = new Color( 48,  62,  78);
+    private boolean isDarkMode = true;
+    private List<Runnable> updaters = new ArrayList<>();
+
+    // ── Paleta de colores Dinámica ─────────────────────────────────────────────
+    private Color bgDark;
+    private Color bgPanel;
+    private Color bgCard;
+    private Color bgInput;
+    private Color accentTeal;
+    private Color accentBlue;
+    private Color dangerRed;
+    private Color warnOrange;
+    private Color okGreen;
+    private Color textPrimary;
+    private Color textMuted;
+    private Color borderColor;
 
     // ── Tipografía ─────────────────────────────────────────────────────────────
     private static final Font FONT_TITLE   = new Font("SansSerif", Font.BOLD,  20);
@@ -30,7 +36,9 @@ public class VentanaVeterinaria extends JFrame {
     private static final Font FONT_MONO    = new Font("Monospaced", Font.PLAIN, 12);
     private static final Font FONT_BTN     = new Font("SansSerif", Font.BOLD,  12);
 
-    // ── Componentes del formulario ─────────────────────────────────────────────
+    // ── Componentes de UI ──────────────────────────────────────────────────────
+    private JPanel           root;
+    private JButton          btnThemeToggle;
     private JTextField       txtNombreMascota;
     private JTextField       txtEdadMascota;
     private JComboBox<String> cbEspecie;
@@ -42,7 +50,6 @@ public class VentanaVeterinaria extends JFrame {
     private JButton          btnGuardar;
     private JButton          btnVerHistorial;
 
-    // ── Panel de alerta integrado ──────────────────────────────────────────────
     private JPanel    alertPanel;
     private JLabel    alertIconLabel;
     private JLabel    alertNivelLabel;
@@ -52,85 +59,145 @@ public class VentanaVeterinaria extends JFrame {
     public VentanaVeterinaria() {
         setTitle("VetSentinel — Módulo Clínico Veterinario");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBackground(BG_DARK);
+        
+        aplicarColores(isDarkMode);
 
-        JPanel root = new JPanel(new BorderLayout(0, 0));
-        root.setBackground(BG_DARK);
+        root = new JPanel(new BorderLayout(0, 0));
+        root.setBackground(bgDark);
 
-        root.add(buildHeader(),    BorderLayout.NORTH);
-        root.add(buildCenter(),    BorderLayout.CENTER);
+        root.add(buildHeader(), BorderLayout.NORTH);
+        root.add(buildCenter(), BorderLayout.CENTER);
 
         setContentPane(root);
+        setPreferredSize(new Dimension(1100, 850));
+        setMinimumSize(new Dimension(1000, 800));
         pack();
-        setMinimumSize(new Dimension(900, 640));
         setLocationRelativeTo(null);
 
         wireListeners();
         resetAlertPanel();
     }
 
+    private void aplicarColores(boolean oscuro) {
+        if (oscuro) {
+            bgDark       = new Color(13,  17,  23);
+            bgPanel      = new Color(22,  30,  40);
+            bgCard       = new Color(30,  41,  55);
+            bgInput      = new Color(18,  24,  33);
+            accentTeal   = new Color(20, 184, 166);
+            accentBlue   = new Color(56, 139, 253);
+            dangerRed    = new Color(220,  53,  69);
+            warnOrange   = new Color(255, 152,   0);
+            okGreen      = new Color( 40, 167,  69);
+            textPrimary  = new Color(245, 250, 255);
+            textMuted    = new Color(175, 195, 215);
+            borderColor  = new Color( 48,  62,  78);
+        } else {
+            bgDark       = new Color(244, 247, 249);
+            bgPanel      = new Color(255, 255, 255);
+            bgCard       = new Color(255, 255, 255);
+            bgInput      = new Color(250, 250, 250);
+            accentTeal   = new Color(0,   168, 181);
+            accentBlue   = new Color(10,  100, 220);
+            dangerRed    = new Color(224, 122,  95);
+            warnOrange   = new Color(245, 130,   0);
+            okGreen      = new Color( 30, 140,  50);
+            textPrimary  = new Color(0,   61,  91);
+            textMuted    = new Color(85,  102, 119);
+            borderColor  = new Color(221, 228, 233);
+        }
+    }
+
+    private void alternarTema() {
+        isDarkMode = !isDarkMode;
+        aplicarColores(isDarkMode);
+        
+        getContentPane().setBackground(bgDark);
+        root.setBackground(bgDark);
+        
+        for (Runnable r : updaters) {
+            r.run();
+        }
+        
+        SwingUtilities.updateComponentTreeUI(this);
+        repaint();
+    }
+
     // ══════════════════════════════════════════════════════════════════════════
-    //  HEADER
+    //  HEADER (CON BANNER Y SWITCH DE TEMA)
     // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildHeader() {
-        JPanel header = new JPanel(new BorderLayout()) {
-            @Override protected void paintComponent(Graphics g) {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setPreferredSize(new Dimension(getWidth(), 180));
+        
+        JPanel imageContainer = new JPanel() {
+            private Image banner;
+            {
+                try {
+                    ImageIcon icon = new ImageIcon("img/bannerProyecto.png");
+                    banner = icon.getImage();
+                } catch (Exception e) { System.out.println("Imagen no encontrada."); }
+            }
+            @Override
+            protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
+                if (banner != null) {
+                    Graphics2D g2 = (Graphics2D) g;
+                    g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2.drawImage(banner, 0, 0, getWidth(), getHeight(), this);
+                } else {
+                    g.setColor(accentTeal);
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+        imageContainer.setLayout(new BorderLayout());
+        imageContainer.setBorder(new EmptyBorder(15, 25, 15, 25));
+
+        btnThemeToggle = new JButton() {
+            @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Gradiente sutil de izquierda a derecha
-                GradientPaint gp = new GradientPaint(0, 0, new Color(16, 185, 129, 30),
-                        getWidth(), 0, new Color(56, 139, 253, 10));
-                g2.setPaint(gp);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                // línea inferior
-                g2.setColor(BORDER_COLOR);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawLine(0, getHeight()-1, getWidth(), getHeight()-1);
+                g2.setColor(new Color(0, 0, 0, 180)); 
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 36, 36);
+                
+                g2.setColor(Color.WHITE);
+                g2.setFont(FONT_BTN);
+                FontMetrics fm = g2.getFontMetrics();
+                String text = isDarkMode ? "☀️ Modo Claro" : "🌙 Modo Oscuro";
+                int x = (getWidth() - fm.stringWidth(text)) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(text, x, y);
                 g2.dispose();
             }
         };
-        header.setBackground(BG_PANEL);
-        header.setBorder(new EmptyBorder(16, 24, 16, 24));
+        btnThemeToggle.setFocusPainted(false);
+        btnThemeToggle.setContentAreaFilled(false);
+        btnThemeToggle.setBorderPainted(false);
+        btnThemeToggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnThemeToggle.setPreferredSize(new Dimension(135, 36));
+        btnThemeToggle.addActionListener(e -> alternarTema());
+        
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        rightPanel.setOpaque(false);
+        rightPanel.add(btnThemeToggle);
 
-        // Logo + título
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
-        left.setOpaque(false);
-
-        JLabel icon = new JLabel("🐾");
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
-
-        JPanel titles = new JPanel(new GridLayout(2, 1, 0, 2));
-        titles.setOpaque(false);
-        JLabel title = makeLabel("VetSentinel", FONT_TITLE, ACCENT_TEAL);
-        JLabel sub   = makeLabel("Sistema de Vigilancia Zoonótica — INS Colombia", FONT_LABEL, TEXT_MUTED);
-        titles.add(title);
-        titles.add(sub);
-
-        left.add(icon);
-        left.add(titles);
-
-        // Badge de estado
-        JPanel badge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        badge.setOpaque(false);
-        JLabel dot = new JLabel("●");
-        dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        dot.setForeground(OK_GREEN);
-        JLabel status = makeLabel("Sistema activo", FONT_LABEL, TEXT_MUTED);
-        badge.add(dot);
-        badge.add(status);
-
-        header.add(left,  BorderLayout.WEST);
-        header.add(badge, BorderLayout.EAST);
-        return header;
+        imageContainer.add(rightPanel, BorderLayout.EAST);
+        headerPanel.add(imageContainer, BorderLayout.CENTER);
+        return headerPanel;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
     //  CENTRO: formulario (izq) + panel alerta (der)
     // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildCenter() {
-        JPanel center = new JPanel(new GridBagLayout());
-        center.setBackground(BG_DARK);
+        JPanel center = new JPanel(new GridBagLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(bgDark);
+                g.fillRect(0,0,getWidth(),getHeight());
+            }
+        };
+        updaters.add(center::repaint);
         center.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -139,10 +206,57 @@ public class VentanaVeterinaria extends JFrame {
         gbc.weightx = 0.48;
         gbc.weighty = 1.0;
         gbc.gridx = 0; gbc.gridy = 0;
-        center.add(buildFormPanel(), gbc);
+        
+        JPanel leftContainer = new JPanel();
+        leftContainer.setLayout(new BoxLayout(leftContainer, BoxLayout.Y_AXIS));
+        leftContainer.setOpaque(false);
+
+        // Logo + título (reubicados)
+        JPanel leftTitles = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        leftTitles.setOpaque(false);
+        JLabel icon = new JLabel("🐾");
+        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+        updaters.add(() -> icon.setForeground(textPrimary));
+        
+        JPanel titles = new JPanel(new GridLayout(2, 1, 0, 2));
+        titles.setOpaque(false);
+        JLabel title = makeLabel("VetSentinel", FONT_TITLE, () -> accentTeal);
+        JLabel sub   = makeLabel("Sistema de Vigilancia Zoonótica — INS Colombia", FONT_LABEL, () -> textMuted);
+        titles.add(title);
+        titles.add(sub);
+        leftTitles.add(icon);
+        leftTitles.add(titles);
+
+        // Badge de estado
+        JPanel badge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        badge.setOpaque(false);
+        JLabel dot = new JLabel("●");
+        dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        updaters.add(() -> {
+            dot.setForeground(okGreen);
+            icon.setForeground(textPrimary); // repinta icono main
+        });
+        JLabel status = makeLabel("Sistema activo", FONT_LABEL, () -> textMuted);
+        badge.add(dot);
+        badge.add(status);
+
+        JPanel topRow = new JPanel(new BorderLayout());
+        topRow.setOpaque(false);
+        topRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        topRow.add(leftTitles, BorderLayout.WEST);
+        topRow.add(badge, BorderLayout.EAST);
+
+        leftContainer.add(topRow);
+        leftContainer.add(Box.createVerticalStrut(15));
+        
+        JPanel formPanel = buildFormPanel();
+        formPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        leftContainer.add(formPanel);
+
+        center.add(leftContainer, gbc);
 
         gbc.gridx = 1;
-        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.insets = new Insets(50, 0, 0, 0); // Mismo offset para alinear verticalmente
         gbc.weightx = 0.52;
         center.add(buildAlertPanel(), gbc);
 
@@ -157,39 +271,40 @@ public class VentanaVeterinaria extends JFrame {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
         card.add(sectionLabel("DATOS DE LA MASCOTA"));
-        card.add(Box.createVerticalStrut(10));
+        card.add(Box.createVerticalStrut(5));
         card.add(fieldRow("Nombre",  txtNombreMascota = createTextField("Ej: Milo")));
-        card.add(Box.createVerticalStrut(8));
+        card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Edad (años)", txtEdadMascota = createTextField("Ej: 3")));
-        card.add(Box.createVerticalStrut(8));
+        card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
-        card.add(Box.createVerticalStrut(8));
+        card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Parásito diagnosticado",
                 cbParasito = createCombo(new String[]{
                         "Toxoplasma gondii",
                         "Leishmania spp",
                         "Toxocara canis/cati"})));
 
-        card.add(Box.createVerticalStrut(20));
-        card.add(sectionLabel("DATOS DEL PROPIETARIO"));
         card.add(Box.createVerticalStrut(10));
+        card.add(sectionLabel("DATOS DEL PROPIETARIO"));
+        card.add(Box.createVerticalStrut(5));
         card.add(fieldRow("Nombre completo", txtNombrePropietario = createTextField("Nombre del dueño")));
-        card.add(Box.createVerticalStrut(8));
+        card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Dirección del hogar", txtDireccion = createTextField("Calle, barrio, ciudad")));
 
-        card.add(Box.createVerticalStrut(16));
-        card.add(sectionLabel("FACTORES DE RIESGO EN EL HOGAR"));
         card.add(Box.createVerticalStrut(10));
+        card.add(sectionLabel("FACTORES DE RIESGO EN EL HOGAR"));
+        card.add(Box.createVerticalStrut(5));
 
         JPanel riskRow = new JPanel(new GridLayout(1, 2, 12, 0));
         riskRow.setOpaque(false);
-        riskRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        // Garantizar que layout no se auto-oculte por BoxLayout: SIN restricciones MaximumSize estrictas!
         riskRow.add(riskCard("🤰", "Mujer embarazada", chkEmbarazada = createCheckBox()));
         riskRow.add(riskCard("👶", "Niños menores",    chkNinos      = createCheckBox()));
         card.add(riskRow);
 
-        card.add(Box.createVerticalStrut(20));
+        card.add(Box.createVerticalStrut(10));
         card.add(buildButtonRow());
+        card.add(Box.createVerticalGlue()); // Combate el estiramiento absorbiendo espacio extra
 
         return card;
     }
@@ -197,10 +312,9 @@ public class VentanaVeterinaria extends JFrame {
     private JPanel buildButtonRow() {
         JPanel row = new JPanel(new GridLayout(1, 2, 10, 0));
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
 
-        btnGuardar = createButton("Guardar y Generar Alerta", DANGER_RED);
-        btnVerHistorial = createButton("Ver Historial", new Color(30, 80, 140));
+        btnGuardar = createButton("Guardar y Generar Alerta", () -> dangerRed);
+        btnVerHistorial = createButton("Ver Historial", () -> accentBlue);
 
         row.add(btnGuardar);
         row.add(btnVerHistorial);
@@ -218,9 +332,9 @@ public class VentanaVeterinaria extends JFrame {
         JPanel alertHeader = new JPanel(new BorderLayout(10, 0));
         alertHeader.setOpaque(false);
 
-        alertIconLabel  = makeLabel("🔍", new Font("Segoe UI Emoji", Font.PLAIN, 32), TEXT_MUTED);
-        alertNivelLabel = makeLabel("EN ESPERA", FONT_SECTION, TEXT_MUTED);
-        alertMascotaLabel = makeLabel("Ingresa un diagnóstico para ver la alerta", FONT_LABEL, TEXT_MUTED);
+        alertIconLabel  = makeLabel("🔍", new Font("Segoe UI Emoji", Font.PLAIN, 32), () -> textMuted);
+        alertNivelLabel = makeLabel("EN ESPERA", FONT_SECTION, () -> textMuted);
+        alertMascotaLabel = makeLabel("Ingresa un diagnóstico para ver la alerta", FONT_LABEL, () -> textMuted);
 
         JPanel alertTitles = new JPanel(new GridLayout(2, 1, 0, 4));
         alertTitles.setOpaque(false);
@@ -231,16 +345,20 @@ public class VentanaVeterinaria extends JFrame {
         alertHeader.add(alertTitles,     BorderLayout.CENTER);
 
         // Separador
-        JSeparator sep = new JSeparator();
-        sep.setForeground(BORDER_COLOR);
-        sep.setBackground(BORDER_COLOR);
+        JSeparator sep = new JSeparator() {
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(borderColor);
+                g.fillRect(0,0,getWidth(),getHeight());
+            }
+        };
+        updaters.add(sep::repaint);
 
         // Área de texto de la alerta
         alertTextArea = new JTextArea();
         alertTextArea.setEditable(false);
         alertTextArea.setOpaque(false);
         alertTextArea.setFont(FONT_MONO);
-        alertTextArea.setForeground(TEXT_MUTED);
+        alertTextArea.setForeground(textMuted);
         alertTextArea.setLineWrap(true);
         alertTextArea.setWrapStyleWord(true);
         alertTextArea.setBorder(null);
@@ -252,23 +370,28 @@ public class VentanaVeterinaria extends JFrame {
         scroll.setBorder(null);
         styleScrollBar(scroll);
 
+        // Updater específico para los textos del panel interactivo de la derecha
+        updaters.add(() -> {
+            if ("EN ESPERA".equals(alertNivelLabel.getText())) {
+                alertNivelLabel.setForeground(textMuted);
+                alertMascotaLabel.setForeground(textMuted);
+                alertIconLabel.setForeground(textMuted);
+            } else {
+                alertMascotaLabel.setForeground(textPrimary);
+                if (alertNivelLabel.getText().contains("CRÍTICO")) alertNivelLabel.setForeground(dangerRed);
+                else if (alertNivelLabel.getText().contains("ALTO")) alertNivelLabel.setForeground(warnOrange);
+                else alertNivelLabel.setForeground(okGreen);
+            }
+            if (alertTextArea.getText() != null && alertTextArea.getText().contains("aparecerán aquí")) {
+                alertTextArea.setForeground(textMuted);
+            } else {
+                alertTextArea.setForeground(textPrimary);
+            }
+        });
+
         // Footer con fuente
-        JLabel footer = makeLabel("Fuente: INS Colombia BES SE26-2025", FONT_LABEL, new Color(60, 80, 100));
+        JLabel footer = makeLabel("Fuente: INS Colombia BES SE26-2025", FONT_LABEL, () -> textMuted);
         footer.setHorizontalAlignment(SwingConstants.RIGHT);
-
-        alertPanel.add(alertHeader, BorderLayout.NORTH);
-        alertPanel.add(sep,         BorderLayout.CENTER);
-
-        JPanel body = new JPanel(new BorderLayout(0, 10));
-        body.setOpaque(false);
-        body.add(scroll,  BorderLayout.CENTER);
-        body.add(footer,  BorderLayout.SOUTH);
-        alertPanel.add(body, BorderLayout.SOUTH);
-
-        // Hacer que el scroll ocupe bien el espacio
-        alertPanel.setLayout(new BorderLayout(0, 10));
-        alertPanel.removeAll();
-        alertPanel.add(alertHeader, BorderLayout.NORTH);
 
         JPanel mainBody = new JPanel(new BorderLayout(0, 8));
         mainBody.setOpaque(false);
@@ -276,6 +399,8 @@ public class VentanaVeterinaria extends JFrame {
         mainBody.add(sep,    BorderLayout.NORTH);
         mainBody.add(scroll, BorderLayout.CENTER);
         mainBody.add(footer, BorderLayout.SOUTH);
+        
+        alertPanel.add(alertHeader, BorderLayout.NORTH);
         alertPanel.add(mainBody, BorderLayout.CENTER);
 
         return alertPanel;
@@ -292,11 +417,11 @@ public class VentanaVeterinaria extends JFrame {
     private void resetAlertPanel() {
         alertIconLabel.setText("🔍");
         alertNivelLabel.setText("EN ESPERA");
-        alertNivelLabel.setForeground(TEXT_MUTED);
         alertMascotaLabel.setText("Ingresa un diagnóstico para ver la alerta");
-        alertMascotaLabel.setForeground(TEXT_MUTED);
-        alertTextArea.setForeground(TEXT_MUTED);
         alertTextArea.setText("El resultado del análisis de riesgo de\nconvivencia aparecerá aquí una vez que\nguardes un diagnóstico.");
+        alertNivelLabel.setForeground(textMuted);
+        alertMascotaLabel.setForeground(textMuted);
+        alertTextArea.setForeground(textMuted);
     }
 
     private void guardarYMostrarAlerta() {
@@ -347,27 +472,24 @@ public class VentanaVeterinaria extends JFrame {
     }
 
     private void mostrarAlertaEnPanel(String alerta, String mascota, String especie, String parasito) {
-        // Detectar nivel de riesgo
         String nivel;
         Color  nivelColor;
         String icon;
 
         if (alerta.contains("NIVEL: CRITICO")) {
-            nivel = "⚠  NIVEL CRÍTICO";  nivelColor = DANGER_RED;    icon = "🚨";
-        } else if (alerta.contains("NIVEL: ALTO")) {
-            nivel = "▲  NIVEL ALTO";     nivelColor = WARN_ORANGE;   icon = "⚠️";
-        } else if (alerta.contains("NIVEL: MEDIO")) {
-            nivel = "●  NIVEL MEDIO";    nivelColor = new Color(255, 193, 7); icon = "⚡";
+            nivel = "⚠  NIVEL CRÍTICO";  nivelColor = dangerRed;    icon = "🚨";
+        } else if (alerta.contains("NIVEL: ALTO") || alerta.contains("NIVEL: MEDIO")) {
+            nivel = "▲  ATENCIÓN";     nivelColor = warnOrange;   icon = "⚠️";
         } else {
-            nivel = "✓  NIVEL BAJO";     nivelColor = OK_GREEN;       icon = "✅";
+            nivel = "✓  NIVEL BAJO";     nivelColor = okGreen;       icon = "✅";
         }
 
         alertIconLabel.setText(icon);
         alertNivelLabel.setText(nivel);
         alertNivelLabel.setForeground(nivelColor);
         alertMascotaLabel.setText(mascota + " (" + especie + ")  ·  " + parasito);
-        alertMascotaLabel.setForeground(TEXT_PRIMARY);
-        alertTextArea.setForeground(TEXT_PRIMARY);
+        alertMascotaLabel.setForeground(textPrimary);
+        alertTextArea.setForeground(textPrimary);
         alertTextArea.setText(alerta);
         alertTextArea.setCaretPosition(0);
     }
@@ -375,7 +497,6 @@ public class VentanaVeterinaria extends JFrame {
     private void guardarEnBD(String nombreProp, String dir, boolean ninos, boolean embarazada,
                              String nombreMascota, String especie, int edad, String parasito) {
         try (Connection con = ConexionDB.getConexion()) {
-
             PreparedStatement psProp = con.prepareStatement(
                     "INSERT INTO Propietarios (nombre, direccion, tiene_ninos, hay_embarazadas) VALUES (?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS);
@@ -449,36 +570,36 @@ public class VentanaVeterinaria extends JFrame {
                 @Override public boolean isCellEditable(int r, int c) { return false; }
                 @Override public Component prepareRenderer(javax.swing.table.TableCellRenderer r, int row, int col) {
                     Component c = super.prepareRenderer(r, row, col);
-                    c.setBackground(row % 2 == 0 ? BG_CARD : BG_PANEL);
-                    c.setForeground(TEXT_PRIMARY);
+                    c.setBackground(row % 2 == 0 ? bgCard : bgPanel);
+                    c.setForeground(textPrimary);
                     ((JComponent)c).setBorder(new EmptyBorder(6, 10, 6, 10));
                     return c;
                 }
             };
-            table.setBackground(BG_CARD);
-            table.setForeground(TEXT_PRIMARY);
+            table.setBackground(bgCard);
+            table.setForeground(textPrimary);
             table.setFont(FONT_INPUT);
             table.setRowHeight(34);
             table.setShowGrid(false);
             table.setIntercellSpacing(new Dimension(0, 0));
-            table.getTableHeader().setBackground(BG_DARK);
-            table.getTableHeader().setForeground(ACCENT_TEAL);
+            table.getTableHeader().setBackground(bgDark);
+            table.getTableHeader().setForeground(accentTeal);
             table.getTableHeader().setFont(FONT_SECTION);
-            table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR));
+            table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor));
 
             JScrollPane scroll = new JScrollPane(table);
-            scroll.setPreferredSize(new Dimension(760, 340));
-            scroll.setBackground(BG_CARD);
-            scroll.getViewport().setBackground(BG_CARD);
-            scroll.setBorder(BorderFactory.createLineBorder(BORDER_COLOR));
+            scroll.setPreferredSize(new Dimension(800, 350));
+            scroll.setBackground(bgCard);
+            scroll.getViewport().setBackground(bgCard);
+            scroll.setBorder(BorderFactory.createLineBorder(borderColor));
             styleScrollBar(scroll);
 
             JPanel dialogPanel = new JPanel(new BorderLayout(0, 10));
-            dialogPanel.setBackground(BG_PANEL);
+            dialogPanel.setBackground(bgPanel);
             dialogPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-            JLabel dlgTitle = makeLabel("Historial de Diagnósticos", FONT_TITLE, ACCENT_TEAL);
-            JLabel dlgSub   = makeLabel(data.length + " registro(s) encontrado(s)", FONT_LABEL, TEXT_MUTED);
+            JLabel dlgTitle = makeLabel("Historial de Diagnósticos", FONT_TITLE, () -> accentTeal);
+            JLabel dlgSub   = makeLabel(data.length + " registro(s) encontrado(s)", FONT_LABEL, () -> textMuted);
             JPanel dlgHeader = new JPanel(new GridLayout(2,1,0,4));
             dlgHeader.setOpaque(false);
             dlgHeader.add(dlgTitle);
@@ -490,8 +611,8 @@ public class VentanaVeterinaria extends JFrame {
             JOptionPane pane = new JOptionPane(dialogPanel,
                     JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION);
             JDialog dialog = pane.createDialog(this, "VetSentinel — Historial");
-            dialog.getContentPane().setBackground(BG_PANEL);
-            dialog.setBackground(BG_PANEL);
+            dialog.getContentPane().setBackground(bgPanel);
+            dialog.setBackground(bgPanel);
             dialog.setVisible(true);
 
         } catch (SQLException ex) {
@@ -508,9 +629,9 @@ public class VentanaVeterinaria extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(BG_CARD);
+                g2.setColor(bgCard);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth()-1, getHeight()-1, 12, 12));
-                g2.setColor(BORDER_COLOR);
+                g2.setColor(borderColor);
                 g2.setStroke(new BasicStroke(1f));
                 g2.draw(new RoundRectangle2D.Float(0, 0, getWidth()-1, getHeight()-1, 12, 12));
                 g2.dispose();
@@ -518,23 +639,27 @@ public class VentanaVeterinaria extends JFrame {
         };
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(20, 20, 20, 20));
+        updaters.add(p::repaint);
         return p;
     }
 
     private JLabel sectionLabel(String text) {
-        JLabel l = makeLabel(text, FONT_SECTION, ACCENT_TEAL);
+        JLabel l = makeLabel(text, FONT_SECTION, () -> accentTeal);
         l.setAlignmentX(Component.LEFT_ALIGNMENT);
-        l.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
-                new Color(ACCENT_TEAL.getRed(), ACCENT_TEAL.getGreen(), ACCENT_TEAL.getBlue(), 60)));
+        Runnable updater = () -> {
+            l.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
+                    new Color(accentTeal.getRed(), accentTeal.getGreen(), accentTeal.getBlue(), 60)));
+        };
+        updater.run();
+        updaters.add(updater);
         return l;
     }
 
     private JPanel fieldRow(String labelText, JComponent field) {
         JPanel row = new JPanel(new BorderLayout(0, 4));
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 62));
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel lbl = makeLabel(labelText, FONT_LABEL, TEXT_MUTED);
+        JLabel lbl = makeLabel(labelText, FONT_LABEL, () -> textMuted);
         row.add(lbl,   BorderLayout.NORTH);
         row.add(field, BorderLayout.CENTER);
         return row;
@@ -546,7 +671,7 @@ public class VentanaVeterinaria extends JFrame {
                 super.paintComponent(g);
                 if (getText().isEmpty() && !isFocusOwner()) {
                     Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setColor(TEXT_MUTED);
+                    g2.setColor(textMuted);
                     g2.setFont(FONT_INPUT.deriveFont(Font.ITALIC));
                     g2.drawString(placeholder, 10, getHeight()/2 + 5);
                     g2.dispose();
@@ -554,23 +679,30 @@ public class VentanaVeterinaria extends JFrame {
             }
         };
         styleInput(tf);
+        updaters.add(tf::repaint);
         return tf;
     }
 
     private <T> JComboBox<T> createCombo(T[] items) {
         JComboBox<T> cb = new JComboBox<>(items);
-        cb.setBackground(BG_INPUT);
-        cb.setForeground(TEXT_PRIMARY);
         cb.setFont(FONT_INPUT);
-        cb.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER_COLOR),
-                new EmptyBorder(6, 8, 6, 8)));
+        Runnable updater = () -> {
+            cb.setBackground(bgInput);
+            cb.setForeground(textPrimary);
+            cb.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(borderColor),
+                    new EmptyBorder(6, 8, 6, 8)));
+        };
+        updater.run();
+        updaters.add(updater);
+        
         cb.setRenderer(new DefaultListCellRenderer() {
             @Override public Component getListCellRendererComponent(JList<?> list,
                                                                     Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? new Color(40, 60, 80) : BG_INPUT);
-                setForeground(TEXT_PRIMARY);
+                Color selBg = isDarkMode ? new Color(40, 60, 80) : new Color(220, 230, 240);
+                setBackground(isSelected ? selBg : bgInput);
+                setForeground(textPrimary);
                 setBorder(new EmptyBorder(6, 10, 6, 10));
                 return this;
             }
@@ -590,12 +722,15 @@ public class VentanaVeterinaria extends JFrame {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Color bg = cb.isSelected()
-                        ? new Color(220, 53, 69, 30)
-                        : new Color(30, 41, 55);
+                Color checkBg = new Color(dangerRed.getRed(), dangerRed.getGreen(), dangerRed.getBlue(), 30);
+                Color normalBg = isDarkMode ? new Color(30, 41, 55) : new Color(245, 248, 250);
+                Color bg = cb.isSelected() ? checkBg : normalBg;
+                
                 g2.setColor(bg);
                 g2.fill(new RoundRectangle2D.Float(0,0,getWidth()-1,getHeight()-1,8,8));
-                Color border = cb.isSelected() ? new Color(DANGER_RED.getRed(), DANGER_RED.getGreen(), DANGER_RED.getBlue(), 120) : BORDER_COLOR;
+                
+                Color selBorder = new Color(dangerRed.getRed(), dangerRed.getGreen(), dangerRed.getBlue(), 120);
+                Color border = cb.isSelected() ? selBorder : borderColor;
                 g2.setColor(border);
                 g2.setStroke(new BasicStroke(1f));
                 g2.draw(new RoundRectangle2D.Float(0,0,getWidth()-1,getHeight()-1,8,8));
@@ -605,28 +740,30 @@ public class VentanaVeterinaria extends JFrame {
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(10, 12, 10, 12));
 
-        JLabel ic  = makeLabel(emoji, new Font("Segoe UI Emoji", Font.PLAIN, 20), TEXT_PRIMARY);
-        JLabel lbl = makeLabel(label, FONT_LABEL, TEXT_PRIMARY);
+        JLabel ic  = makeLabel(emoji, new Font("Segoe UI Emoji", Font.PLAIN, 24), () -> textPrimary);
+        JLabel lbl = makeLabel(label, FONT_LABEL, () -> textPrimary);
 
         JPanel text = new JPanel(new GridLayout(2,1,0,2));
         text.setOpaque(false);
         text.add(lbl);
-        text.add(makeLabel("Marcar si aplica", FONT_LABEL.deriveFont(10f), TEXT_MUTED));
+        JLabel subLbl = makeLabel("Marcar si aplica", FONT_LABEL.deriveFont(10f), () -> textMuted);
+        text.add(subLbl);
 
         p.add(ic,  BorderLayout.WEST);
         p.add(text, BorderLayout.CENTER);
         p.add(cb,  BorderLayout.EAST);
 
-        // Repintar al cambiar estado
+        updaters.add(p::repaint);
         cb.addActionListener(e -> p.repaint());
         return p;
     }
 
-    private JButton createButton(String text, Color bg) {
+    private JButton createButton(String text, Supplier<Color> bgSupplier) {
         JButton btn = new JButton(text) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color bg = bgSupplier.get();
                 Color fill = getModel().isPressed()
                         ? bg.darker()
                         : getModel().isRollover() ? bg.brighter() : bg;
@@ -644,59 +781,66 @@ public class VentanaVeterinaria extends JFrame {
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
-        btn.setPreferredSize(new Dimension(0, 40));
+        btn.setPreferredSize(new Dimension(0, 42));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        updaters.add(btn::repaint);
         return btn;
     }
 
     private void styleInput(JTextField tf) {
-        tf.setBackground(BG_INPUT);
-        tf.setForeground(TEXT_PRIMARY);
-        tf.setCaretColor(ACCENT_TEAL);
-        tf.setFont(FONT_INPUT);
-        tf.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER_COLOR),
-                new EmptyBorder(6, 10, 6, 10)));
+        Runnable updater = () -> {
+            tf.setBackground(bgInput);
+            tf.setForeground(textPrimary);
+            tf.setCaretColor(accentTeal);
+            tf.setFont(FONT_INPUT);
+            if (!tf.isFocusOwner()) {
+                tf.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(borderColor),
+                    new EmptyBorder(6, 10, 6, 10)));
+            } else {
+                tf.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(accentTeal),
+                    new EmptyBorder(6, 10, 6, 10)));
+            }
+        };
+        updater.run();
+        updaters.add(updater);
+        
         tf.addFocusListener(new FocusAdapter() {
-            @Override public void focusGained(FocusEvent e) {
-                tf.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(ACCENT_TEAL),
-                        new EmptyBorder(6, 10, 6, 10)));
-                tf.repaint();
-            }
-            @Override public void focusLost(FocusEvent e) {
-                tf.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(BORDER_COLOR),
-                        new EmptyBorder(6, 10, 6, 10)));
-                tf.repaint();
-            }
+            @Override public void focusGained(FocusEvent e) { updater.run(); tf.repaint(); }
+            @Override public void focusLost(FocusEvent e) { updater.run(); tf.repaint(); }
         });
     }
 
     private void styleScrollBar(JScrollPane scroll) {
         JScrollBar vsb = scroll.getVerticalScrollBar();
-        vsb.setBackground(BG_CARD);
-        vsb.setUI(new BasicScrollBarUI() {
-            @Override protected void configureScrollBarColors() {
-                thumbColor  = new Color(60, 80, 100);
-                trackColor  = BG_CARD;
-            }
-            @Override protected JButton createDecreaseButton(int o) { return zeroButton(); }
-            @Override protected JButton createIncreaseButton(int o) { return zeroButton(); }
-            private JButton zeroButton() {
-                JButton b = new JButton(); b.setPreferredSize(new Dimension(0,0)); return b;
-            }
-        });
+        Runnable updater = () -> {
+            vsb.setBackground(bgCard);
+            vsb.setUI(new BasicScrollBarUI() {
+                @Override protected void configureScrollBarColors() {
+                    thumbColor  = isDarkMode ? new Color(60, 80, 100) : new Color(180, 190, 200);
+                    trackColor  = bgCard;
+                }
+                @Override protected JButton createDecreaseButton(int o) { return zeroButton(); }
+                @Override protected JButton createIncreaseButton(int o) { return zeroButton(); }
+                private JButton zeroButton() {
+                    JButton b = new JButton(); b.setPreferredSize(new Dimension(0,0)); return b;
+                }
+            });
+        };
+        updater.run();
+        updaters.add(updater);
     }
 
     private void showStyledDialog(String title, String msg, int type) {
         JOptionPane.showMessageDialog(this, msg, title, type);
     }
 
-    private JLabel makeLabel(String text, Font font, Color color) {
+    private JLabel makeLabel(String text, Font font, Supplier<Color> colorSupplier) {
         JLabel l = new JLabel(text);
         l.setFont(font);
-        l.setForeground(color);
+        l.setForeground(colorSupplier.get());
+        updaters.add(() -> l.setForeground(colorSupplier.get()));
         return l;
     }
 }
