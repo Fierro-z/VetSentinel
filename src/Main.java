@@ -3,8 +3,8 @@ public class Main {
         // Crea las tablas y datos base automáticamente
         ConexionDB.inicializarBD();
 
-        // Muestra la ventana principal
-        VentanaVeterinaria ventana = new VentanaVeterinaria();
-        ventana.setVisible(true);
+        // Muestra la ventana de login
+        VentanaLogin login = new VentanaLogin();
+        login.setVisible(true);
     }
 }

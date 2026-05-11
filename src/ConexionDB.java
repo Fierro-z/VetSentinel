@@ -59,6 +59,11 @@ public class ConexionDB {
                     "FOREIGN KEY (id_mascota) REFERENCES Mascotas(id)," +
                     "FOREIGN KEY (id_parasito) REFERENCES Parasitos(id))");
 
+            stmt.execute("CREATE TABLE IF NOT EXISTS Usuarios (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "username TEXT UNIQUE NOT NULL," +
+                    "password TEXT NOT NULL)");
+
             // Intento seguro de migrar bases de datos existentes
             try {
                 stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT");
@@ -87,6 +92,11 @@ public class ConexionDB {
                         "('Leishmania spp', 'Leishmaniasis cutanea vectorial. Endemica en Antioquia (INS BES SE26 2025).', 'Control del vector Lutzomyia. Uso de toldillos y repelente. Fumigacion peridomiciliar.', 0, 1)");
                 stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos) VALUES " +
                         "('Toxocara canis/cati', 'Larva migrans visceral/cutanea en ninos. Prevalencia perros 7-20% (INS).', 'Desparasitar mascota cada 3 meses. Evitar contacto de ninos con suelo contaminado.', 0, 1)");
+            }
+
+            var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
+            if (rsUsr.next() && rsUsr.getInt(1) == 0) {
+                stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('admin', 'admin123')");
             }
 
             System.out.println("Base de datos lista: vetsentimel.db");
@@ -228,5 +238,18 @@ public class ConexionDB {
             psDiag.setString(3, nivelRiesgo);
             psDiag.executeUpdate();
         }
+    }
+
+    public static boolean validarUsuario(String username, String password) {
+        try (Connection con = getConexion()) {
+            PreparedStatement ps = con.prepareStatement("SELECT * FROM Usuarios WHERE username = ? AND password = ?");
+            ps.setString(1, username);
+            ps.setString(2, password);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            System.out.println("Error al validar usuario: " + e.getMessage());
+        }
+        return false;
     }
 }
