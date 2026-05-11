@@ -5,15 +5,17 @@ public class Propietario {
     private String direccion;
     private boolean tieneNinos;
     private boolean hayEmbarazadas;
+    private int numeroDeEmbarazosPrevios;
     private boolean zonaRural;
 
-    public Propietario(int id, String cedula, String nombre, String direccion, boolean tieneNinos, boolean hayEmbarazadas, boolean zonaRural) {
+    public Propietario(int id, String cedula, String nombre, String direccion, boolean tieneNinos, boolean hayEmbarazadas, int numeroDeEmbarazosPrevios, boolean zonaRural) {
         this.id = id;
         this.cedula = cedula;
         this.nombre = nombre;
         this.direccion = direccion;
         this.tieneNinos = tieneNinos;
         this.hayEmbarazadas = hayEmbarazadas;
+        this.numeroDeEmbarazosPrevios = numeroDeEmbarazosPrevios;
         this.zonaRural = zonaRural;
     }
 
@@ -24,5 +26,6 @@ public class Propietario {
     public String getDireccion() { return direccion; }
     public boolean isTieneNinos() { return tieneNinos; }
     public boolean isHayEmbarazadas() { return hayEmbarazadas; }
+    public int getNumeroDeEmbarazosPrevios() { return numeroDeEmbarazosPrevios; }
     public boolean isZonaRural() { return zonaRural; }
 }

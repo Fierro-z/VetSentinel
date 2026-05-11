@@ -40,6 +40,7 @@ public class ConexionDB {
                     "direccion TEXT," +
                     "tiene_ninos INTEGER DEFAULT 0," +
                     "hay_embarazadas INTEGER DEFAULT 0," +
+                    "numero_embarazos_previos INTEGER DEFAULT 0," +
                     "zona_rural INTEGER DEFAULT 0)");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS Mascotas (" +
@@ -87,6 +88,7 @@ public class ConexionDB {
             
             try {
                 stmt.execute("ALTER TABLE Propietarios ADD COLUMN zona_rural INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE Propietarios ADD COLUMN numero_embarazos_previos INTEGER DEFAULT 0");
             } catch (SQLException ignore) {}
 
             // Insertar parásitos base solo si la tabla está vacía
@@ -182,24 +184,26 @@ public class ConexionDB {
             if (rs.next()) {
                 int id = rs.getInt(1);
                 PreparedStatement psUpd = con.prepareStatement(
-                        "UPDATE Propietarios SET nombre = ?, direccion = ?, tiene_ninos = ?, hay_embarazadas = ?, zona_rural = ? WHERE id = ?");
+                        "UPDATE Propietarios SET nombre = ?, direccion = ?, tiene_ninos = ?, hay_embarazadas = ?, numero_embarazos_previos = ?, zona_rural = ? WHERE id = ?");
                 psUpd.setString(1, p.getNombre());
                 psUpd.setString(2, p.getDireccion());
                 psUpd.setInt(3, p.isTieneNinos() ? 1 : 0);
                 psUpd.setInt(4, p.isHayEmbarazadas() ? 1 : 0);
-                psUpd.setInt(5, p.isZonaRural() ? 1 : 0);
-                psUpd.setInt(6, id);
+                psUpd.setInt(5, p.getNumeroDeEmbarazosPrevios());
+                psUpd.setInt(6, p.isZonaRural() ? 1 : 0);
+                psUpd.setInt(7, id);
                 psUpd.executeUpdate();
                 return id;
             } else {
                 PreparedStatement psIns = con.prepareStatement(
-                        "INSERT INTO Propietarios (cedula, nombre, direccion, tiene_ninos, hay_embarazadas, zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
+                        "INSERT INTO Propietarios (cedula, nombre, direccion, tiene_ninos, hay_embarazadas, numero_embarazos_previos, zona_rural) VALUES (?, ?, ?, ?, ?, ?, ?)");
                 psIns.setString(1, p.getCedula());
                 psIns.setString(2, p.getNombre());
                 psIns.setString(3, p.getDireccion());
                 psIns.setInt(4, p.isTieneNinos() ? 1 : 0);
                 psIns.setInt(5, p.isHayEmbarazadas() ? 1 : 0);
-                psIns.setInt(6, p.isZonaRural() ? 1 : 0);
+                psIns.setInt(6, p.getNumeroDeEmbarazosPrevios());
+                psIns.setInt(7, p.isZonaRural() ? 1 : 0);
                 psIns.executeUpdate();
                 ResultSet keys = con.createStatement().executeQuery("SELECT last_insert_rowid()");
                 if (keys.next()) return keys.getInt(1);
@@ -221,6 +225,7 @@ public class ConexionDB {
                         rs.getString("direccion"),
                         rs.getInt("tiene_ninos") == 1,
                         rs.getInt("hay_embarazadas") == 1,
+                        rs.getInt("numero_embarazos_previos"),
                         rs.getInt("zona_rural") == 1
                 );
             }

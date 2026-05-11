@@ -40,8 +40,17 @@ public class Diagnostico {
                 alerta += "Riesgo general de Leishmaniasis: " + parasito.getRiesgoPrincipal() + "\n\n";
             }
         } else if (parasito.isAlertaEmbarazo() && dueno.isHayEmbarazadas()) {
-            alerta += "NIVEL: CRITICO\n";
-            alerta += "Riesgo crítico por factor embarazo: " + parasito.getRiesgoPrincipal() + "\n\n";
+            boolean esToxoplasma = p.toLowerCase().contains("toxoplasma");
+            if (esToxoplasma && dueno.getNumeroDeEmbarazosPrevios() >= 2) {
+                alerta += "NIVEL: CRITICO (ALTA EXPOSICIÓN EPIDEMIOLÓGICA)\n";
+                alerta += "Riesgo crítico: Gestante multípara (" + dueno.getNumeroDeEmbarazosPrevios() + " embarazos previos). El estudio del Hospital Hernando Moncaleano (Neiva, Huila) indica una alta prevalencia de exposición a Toxoplasma (56.7%) en multíparas. Requiere tamizaje serológico (IgG/IgM) urgente.\n\n";
+            } else if (esToxoplasma) {
+                alerta += "NIVEL: CRITICO\n";
+                alerta += "Riesgo crítico por embarazo. Prevalencia de exposición a Toxoplasma en primíparas: 50.3%. " + parasito.getRiesgoPrincipal() + "\n\n";
+            } else {
+                alerta += "NIVEL: CRITICO\n";
+                alerta += "Riesgo crítico por factor embarazo: " + parasito.getRiesgoPrincipal() + "\n\n";
+            }
         } else if (parasito.isAlertaNinos() && dueno.isTieneNinos()) {
             alerta += "NIVEL: ALTO\n";
             alerta += "Riesgo elevado por presencia de menores: " + parasito.getRiesgoPrincipal() + "\n\n";

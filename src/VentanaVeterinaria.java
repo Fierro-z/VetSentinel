@@ -49,6 +49,7 @@ public class VentanaVeterinaria extends JFrame {
     private JCheckBox        chkEmbarazadas;
     private JCheckBox        chkNinos;
     private JCheckBox        chkZonaRural;
+    private JTextField       txtNumeroEmbarazos;
     private JButton          btnGuardar;
     private JButton          btnVerHistorial;
     private JButton          btnEstadisticas;
@@ -305,6 +306,15 @@ public class VentanaVeterinaria extends JFrame {
         card.add(fieldRow("Nombre completo", txtNombrePropietario = createTextField("Nombre del dueño")));
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Dirección del hogar", txtDireccion = createTextField("Calle, barrio, ciudad")));
+        card.add(Box.createVerticalStrut(3));
+        card.add(fieldRow("Número de embarazos previos (paridad)", txtNumeroEmbarazos = createTextField("Ej: 0, 1, 2...")));
+        txtNumeroEmbarazos.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) && e.getKeyChar() != java.awt.event.KeyEvent.VK_BACK_SPACE) {
+                    e.consume();
+                }
+            }
+        });
 
         card.add(Box.createVerticalStrut(10));
         card.add(sectionLabel("FACTORES DE RIESGO EN EL HOGAR"));
@@ -472,6 +482,7 @@ public class VentanaVeterinaria extends JFrame {
         if (p != null) {
             txtNombrePropietario.setText(p.getNombre());
             txtDireccion.setText(p.getDireccion());
+            txtNumeroEmbarazos.setText(String.valueOf(p.getNumeroDeEmbarazosPrevios()));
             chkNinos.setSelected(p.isTieneNinos());
             chkEmbarazadas.setSelected(p.isHayEmbarazadas());
             chkZonaRural.setSelected(p.isZonaRural());
@@ -517,8 +528,11 @@ public class VentanaVeterinaria extends JFrame {
         boolean embarazada      = chkEmbarazadas.isSelected();
         boolean ninos           = chkNinos.isSelected();
         boolean zonaRural       = chkZonaRural.isSelected();
+        int numeroEmbarazos = 0;
+        try { numeroEmbarazos = Integer.parseInt(txtNumeroEmbarazos.getText().trim()); }
+        catch (NumberFormatException ignored) {}
 
-        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, ninos, embarazada, zonaRural);
+        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, ninos, embarazada, numeroEmbarazos, zonaRural);
         Mascota     mascota     = new Mascota(0, nombreMascota, especie, edad, propietario);
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");
