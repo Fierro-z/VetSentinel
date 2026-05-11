@@ -10,7 +10,7 @@ import java.util.List;
 public class ConexionDB {
 
     // El archivo .db se crea solo en la carpeta del proyecto
-    private static final String URL = "jdbc:sqlite:vetsentimel.db";
+    private static final String URL = "jdbc:sqlite:vetsentinel.db";
 
     public static Connection getConexion() throws SQLException {
         try {
@@ -128,7 +128,7 @@ public class ConexionDB {
                 stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('admin', 'admin123')");
             }
 
-            System.out.println("Base de datos lista: vetsentimel.db");
+            System.out.println("Base de datos lista: vetsentinel.db");
 
         } catch (SQLException e) {
             System.out.println("Error al inicializar BD: " + e.getMessage());
