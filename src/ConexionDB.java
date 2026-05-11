@@ -67,79 +67,60 @@ public class ConexionDB {
                     "password TEXT NOT NULL)");
 
             // Intento seguro de migrar bases de datos existentes
-            try {
-                stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT");
-            } catch (SQLException ignore) {}
-
-            try {
-                stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT");
-            } catch (SQLException ignore) {}
-
+            try { stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT"); } catch (SQLException ignore) {}
+            try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_embarazo INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_ninos INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_zona_rural INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
-            
-            try {
-                // Actualizar las banderas de los seeds originales si la migración de esquema acaba de ocurrir
-                stmt.execute("UPDATE Parasitos SET alerta_embarazo = 1 WHERE nombre = 'Toxoplasma gondii'");
-                stmt.execute("UPDATE Parasitos SET alerta_ninos = 1 WHERE nombre = 'Leishmania spp'");
-                stmt.execute("UPDATE Parasitos SET alerta_ninos = 1 WHERE nombre = 'Toxocara canis/cati'");
-            } catch (SQLException ignore) {}
-            
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN zona_rural INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN numero_embarazos_previos INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
 
-            // Insertar parásitos base solo si la tabla está vacía
-            var rs = stmt.executeQuery("SELECT COUNT(*) FROM Parasitos");
-            if (rs.next() && rs.getInt(1) == 0) {
-                stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES " +
-                        "('Toxoplasma gondii', 'Transmision congenita. Seroprevalencia 40-60% en Colombia (INS).', 'No limpiar arenero sin guantes. Cocinar carne a mas de 70 grados. Lavar vegetales.', 1, 0, 0)");
-                stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES " +
-                        "('Toxocara canis/cati', 'Larva migrans visceral/cutanea en ninos. Prevalencia perros 7-20% (INS).', 'Desparasitar mascota cada 3 meses. Evitar contacto de ninos con suelo contaminado.', 0, 1, 0)");
-            }
-            
-            // Upsert Leishmaniasis con los últimos datos epidemiológicos (BES SE26 2025)
-            var rsCheckLeish = stmt.executeQuery("SELECT id FROM Parasitos WHERE nombre LIKE '%Leishmania%'");
-            if (rsCheckLeish.next()) {
-                int idLeish = rsCheckLeish.getInt(1);
-                PreparedStatement psUpdLeish = con.prepareStatement(
-                    "UPDATE Parasitos SET nombre = 'Leishmaniasis', riesgo_principal = ?, medidas_preventivas = ?, alerta_ninos = 1, alerta_zona_rural = 1 WHERE id = ?");
-                psUpdLeish.setString(1, "Riesgo rural (82.7% casos) y domiciliario en niños (9.4%). Zonas críticas: Risaralda, Atlántico, Caldas, La Guajira, Santander, Boyacá, Cesar, Arauca y Tolima.");
-                psUpdLeish.setString(2, "Control de vectores (Lutzomyia sp.) y uso de toldillos, especialmente si la mascota duerme dentro o cerca de la casa. Fumigación peridomiciliar.");
-                psUpdLeish.setInt(3, idLeish);
-                psUpdLeish.executeUpdate();
-            } else {
-                PreparedStatement psInsLeish = con.prepareStatement(
-                    "INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
-                psInsLeish.setString(1, "Leishmaniasis");
-                psInsLeish.setString(2, "Riesgo rural (82.7% casos) y domiciliario en niños (9.4%). Zonas críticas: Risaralda, Atlántico, Caldas, La Guajira, Santander, Boyacá, Cesar, Arauca y Tolima.");
-                psInsLeish.setString(3, "Control de vectores (Lutzomyia sp.) y uso de toldillos, especialmente si la mascota duerme dentro o cerca de la casa. Fumigación peridomiciliar.");
-                psInsLeish.setInt(4, 0);
-                psInsLeish.setInt(5, 1);
-                psInsLeish.setInt(6, 1);
-                psInsLeish.executeUpdate();
-            }
-            
-            // Upsert Toxoplasmosis
-            var rsCheckToxo = stmt.executeQuery("SELECT id FROM Parasitos WHERE nombre LIKE '%Toxoplasma%'");
-            if (rsCheckToxo.next()) {
-                int idToxo = rsCheckToxo.getInt(1);
-                PreparedStatement psUpdToxo = con.prepareStatement(
-                    "UPDATE Parasitos SET nombre = 'Toxoplasmosis (Toxoplasma gondii)', riesgo_principal = ?, medidas_preventivas = ?, alerta_embarazo = 1 WHERE id = ?");
-                psUpdToxo.setString(1, "Transmisión congénita. Riesgo severo para el feto si la madre se infecta por primera vez durante el embarazo.");
-                psUpdToxo.setString(2, "Evitar que la mujer embarazada manipule la caja de arena del gato y asegurar que la carne consumida en el hogar esté bien cocida.");
-                psUpdToxo.setInt(3, idToxo);
-                psUpdToxo.executeUpdate();
-            } else {
-                PreparedStatement psInsToxo = con.prepareStatement(
-                    "INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
-                psInsToxo.setString(1, "Toxoplasmosis (Toxoplasma gondii)");
-                psInsToxo.setString(2, "Transmisión congénita. Riesgo severo para el feto si la madre se infecta por primera vez durante el embarazo.");
-                psInsToxo.setString(3, "Evitar que la mujer embarazada manipule la caja de arena del gato y asegurar que la carne consumida en el hogar esté bien cocida.");
-                psInsToxo.setInt(4, 1);
-                psInsToxo.setInt(5, 0);
-                psInsToxo.setInt(6, 0);
-                psInsToxo.executeUpdate();
+            // Eliminar parásitos que no sean los 3 permitidos (Toxoplasmosis, Leishmaniasis, Toxocariasis)
+            stmt.execute("DELETE FROM Parasitos WHERE nombre NOT LIKE '%Toxoplasma%' AND nombre NOT LIKE '%Leishmania%' AND nombre NOT LIKE '%Toxocara%'");
+
+            // Datos de los 3 parásitos/enfermedades permitidos
+            String[][] parasitosData = {
+                {"Toxoplasmosis", "Infección causada por el parásito Toxoplasma gondii. Se transmite por heces de gatos, carne mal cocida o alimentos/agua contaminados. Es muy común y peligrosa especialmente para mujeres embarazadas porque puede afectar al bebé.", "Evitar que la mujer embarazada manipule la caja de arena del gato y asegurar que la carne consumida en el hogar esté bien cocida.", "1", "0", "0"},
+                {"Leishmaniasis", "Enfermedad parasitaria transmitida por la picadura de un insecto. En Colombia es frecuente la forma cutánea, que produce lesiones en la piel y es común en zonas rurales y selváticas.", "Control de vectores y uso de toldillos, especialmente si la mascota duerme dentro o cerca de la casa. Fumigación peridomiciliar.", "0", "1", "1"},
+                {"Toxocariasis", "Infección causada por parásitos de perros y gatos. Las personas se contagian al ingerir huevos presentes en suelo contaminado, especialmente en parques. Es común en niños.", "Desparasitar mascota cada 3 meses. Evitar contacto de niños con suelo contaminado.", "0", "1", "0"}
+            };
+
+            for (String[] pData : parasitosData) {
+                String nombre = pData[0];
+                String riesgo = pData[1];
+                String medidas = pData[2];
+                int alertaEmbarazo = Integer.parseInt(pData[3]);
+                int alertaNinos = Integer.parseInt(pData[4]);
+                int alertaZonaRural = Integer.parseInt(pData[5]);
+
+                // Buscar si ya existe
+                PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Parasitos WHERE nombre LIKE ?");
+                psCheck.setString(1, "%" + nombre.substring(0, 5) + "%");
+                ResultSet rsCheck = psCheck.executeQuery();
+
+                if (rsCheck.next()) {
+                    int id = rsCheck.getInt(1);
+                    PreparedStatement psUpd = con.prepareStatement(
+                        "UPDATE Parasitos SET nombre = ?, riesgo_principal = ?, medidas_preventivas = ?, alerta_embarazo = ?, alerta_ninos = ?, alerta_zona_rural = ? WHERE id = ?");
+                    psUpd.setString(1, nombre);
+                    psUpd.setString(2, riesgo);
+                    psUpd.setString(3, medidas);
+                    psUpd.setInt(4, alertaEmbarazo);
+                    psUpd.setInt(5, alertaNinos);
+                    psUpd.setInt(6, alertaZonaRural);
+                    psUpd.setInt(7, id);
+                    psUpd.executeUpdate();
+                } else {
+                    PreparedStatement psIns = con.prepareStatement(
+                        "INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
+                    psIns.setString(1, nombre);
+                    psIns.setString(2, riesgo);
+                    psIns.setString(3, medidas);
+                    psIns.setInt(4, alertaEmbarazo);
+                    psIns.setInt(5, alertaNinos);
+                    psIns.setInt(6, alertaZonaRural);
+                    psIns.executeUpdate();
+                }
             }
 
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
