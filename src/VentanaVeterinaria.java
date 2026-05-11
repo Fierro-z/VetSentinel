@@ -97,7 +97,15 @@ public class VentanaVeterinaria extends VetBaseFrame {
         imageContainer.setLayout(new BorderLayout());
         imageContainer.setBorder(new EmptyBorder(15, 25, 15, 25));
 
-        // Retiramos el botón de tema del banner (se mueve arriba del panel derecho)
+        // Fila superior izquierda sobre el banner para el botón de retroceso
+        JPanel topLeftRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        topLeftRow.setOpaque(false);
+        JButton btnVolverTop = createButton("⬅ Volver al menú", () -> dangerRed);
+        btnVolverTop.setPreferredSize(new Dimension(145, 36));
+        btnVolverTop.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+        topLeftRow.add(btnVolverTop);
+        imageContainer.add(topLeftRow, BorderLayout.NORTH);
+
         headerPanel.add(imageContainer, BorderLayout.CENTER);
         return headerPanel;
     }
@@ -147,15 +155,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         JPanel topRightRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         topRightRow.setOpaque(false);
 
-        JButton btnVolver = new JButton("⬅ Volver al menú");
-        btnVolver.setFont(FONT_BTN);
-        btnVolver.setForeground(textMuted);
-        updaters.add(() -> btnVolver.setForeground(textMuted));
-        btnVolver.setContentAreaFilled(false);
-        btnVolver.setBorderPainted(false);
-        btnVolver.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnVolver.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
-
         JPanel badge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         badge.setOpaque(false);
         JLabel dot = new JLabel("●");
@@ -190,7 +189,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         btnThemeToggle.setPreferredSize(new Dimension(135, 36));
         btnThemeToggle.addActionListener(e -> alternarTema());
 
-        topRightRow.add(btnVolver);
         topRightRow.add(badge);
         topRightRow.add(btnThemeToggle);
 

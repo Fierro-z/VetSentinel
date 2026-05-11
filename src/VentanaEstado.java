@@ -47,6 +47,15 @@ public class VentanaEstado extends VetBaseFrame {
         titles.add(title);
         titles.add(subtitle);
 
+        // Panel izquierdo que agrupa el botón Volver y los títulos
+        JPanel leftPanel = new JPanel(new BorderLayout(15, 0));
+        leftPanel.setOpaque(false);
+        JButton btnVolverTop = createButton("⬅ Volver", () -> dangerRed);
+        btnVolverTop.setPreferredSize(new Dimension(110, 36));
+        btnVolverTop.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+        leftPanel.add(btnVolverTop, BorderLayout.WEST);
+        leftPanel.add(titles, BorderLayout.CENTER);
+
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         rightPanel.setOpaque(false);
 
@@ -54,7 +63,7 @@ public class VentanaEstado extends VetBaseFrame {
         btnActualizar.setPreferredSize(new Dimension(120, 36));
         btnActualizar.addActionListener(e -> actualizarDatos());
 
-        btnThemeToggle = createButton(isDarkMode ? "☀️ Claro" : "🌙 Oscuro", () -> bgCard);
+        btnThemeToggle = createButton(isDarkMode ? "☀️ Claro" : "🌙 Oscuro", () -> textMuted);
         btnThemeToggle.setPreferredSize(new Dimension(100, 36));
         btnThemeToggle.addActionListener(e -> {
             alternarTema();
@@ -62,20 +71,10 @@ public class VentanaEstado extends VetBaseFrame {
             actualizarDatos();
         });
 
-        JButton btnVolver = new JButton("⬅ Volver al menú");
-        btnVolver.setFont(FONT_BTN);
-        btnVolver.setForeground(textMuted);
-        updaters.add(() -> btnVolver.setForeground(textMuted));
-        btnVolver.setContentAreaFilled(false);
-        btnVolver.setBorderPainted(false);
-        btnVolver.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnVolver.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
-
-        rightPanel.add(btnVolver);
         rightPanel.add(btnActualizar);
         rightPanel.add(btnThemeToggle);
 
-        headerPanel.add(titles, BorderLayout.WEST);
+        headerPanel.add(leftPanel, BorderLayout.WEST);
         headerPanel.add(rightPanel, BorderLayout.EAST);
 
         return headerPanel;
