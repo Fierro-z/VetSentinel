@@ -7,6 +7,22 @@
 
 ---
 
+## ✨ Novedades Recientes (UI/UX)
+* **Diseño Responsivo:** Adaptación dinámica a múltiples resoluciones y pantallas mediante proporciones rebalanceadas y barras de desplazamiento (scroll) personalizadas.
+* **Toggle Cards Interactivas:** Rediseño del panel de *Factores de Riesgo* con tarjetas seleccionables modernas que brindan retroalimentación visual inmediata.
+* **Navegación Fluida:** Incorporación de botones de retorno sutiles para cambiar rápidamente entre el *Módulo Clínico* y el *Módulo del Estado*.
+* **Empty States:** Retroalimentación visual elegante ("A la espera de diagnóstico") en los paneles de análisis para guiar al usuario.
+* **Gestión de Información Médica:** Mejora sustancial en la captura de datos clínicos, incorporando georreferenciación por departamentos, visualización avanzada del historial de diagnósticos y generación de estadísticas directas.
+
+---
+
+## ⚙️ Arquitectura Modular
+El sistema opera a través de dos interfaces independientes pero conectadas a una misma inteligencia de datos local:
+* **🏥 Módulo Clínico Veterinario:** Entorno de atención médica para el registro ágil de mascotas y propietarios, emisión de diagnósticos y despliegue automático de alertas preventivas en tiempo real.
+* **🏛️ Módulo de Salud Pública (Estado):** Dashboard de vigilancia epidemiológica gubernamental que compila los hallazgos clínicos, mostrando mapas de riesgo a nivel departamental y reportes estadísticos de cepas zoonóticas.
+
+---
+
 ## 🌍 1. Visión Estratégica: La Convergencia de la Clínica Veterinaria y la Salud Pública
 
 VetSentinel no es simplemente un software de gestión clínica; es un nodo periférico de inteligencia dentro del ecosistema de vigilancia epidemiológica nacional. Bajo el paradigma de "Una Salud" (*One Health*), la plataforma reconoce que el consultorio veterinario representa la primera línea de defensa contra brotes humanos. La transición de datos "de la clínica al hogar" permite interceptar patógenos antes de que se manifiesten en la población humana, transformando un hallazgo microscópico en una intervención ambiental oportuna. 
