@@ -8,7 +8,8 @@ public class Propietario {
     private int numeroDeEmbarazosPrevios;
     private boolean zonaRural;
 
-    public Propietario(int id, String cedula, String nombre, String direccion, boolean tieneNinos, boolean hayEmbarazadas, int numeroDeEmbarazosPrevios, boolean zonaRural) {
+    public Propietario(int id, String cedula, String nombre, String direccion, boolean tieneNinos,
+            boolean hayEmbarazadas, int numeroDeEmbarazosPrevios, boolean zonaRural) {
         this.id = id;
         this.cedula = cedula;
         this.nombre = nombre;
@@ -19,13 +20,39 @@ public class Propietario {
         this.zonaRural = zonaRural;
     }
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
-    public String getCedula() { return cedula; }
-    public String getNombre() { return nombre; }
-    public String getDireccion() { return direccion; }
-    public boolean isTieneNinos() { return tieneNinos; }
-    public boolean isHayEmbarazadas() { return hayEmbarazadas; }
-    public int getNumeroDeEmbarazosPrevios() { return numeroDeEmbarazosPrevios; }
-    public boolean isZonaRural() { return zonaRural; }
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getCedula() {
+        return cedula;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getDireccion() {
+        return direccion;
+    }
+
+    public boolean isTieneNinos() {
+        return tieneNinos;
+    }
+
+    public boolean isHayEmbarazadas() {
+        return hayEmbarazadas;
+    }
+
+    public int getNumeroDeEmbarazosPrevios() {
+        return numeroDeEmbarazosPrevios;
+    }
+
+    public boolean isZonaRural() {
+        return zonaRural;
+    }
 }
