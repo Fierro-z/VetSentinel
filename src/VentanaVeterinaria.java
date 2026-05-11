@@ -31,6 +31,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private JButton          btnEstadisticas;
 
     private JPanel    alertPanel;
+    private JPanel    alertCenterWrapper;
     private JLabel    alertIconLabel;
     private JLabel    alertNivelLabel;
     private JTextArea alertTextArea;
@@ -54,11 +55,11 @@ public class VentanaVeterinaria extends VetBaseFrame {
         root.add(buildCenter(), BorderLayout.CENTER);
 
         setContentPane(root);
-        // Ancho: 1100 | Alto: 950 (Aumentado hacia abajo)
-        setPreferredSize(new Dimension(1100, 950));
+        // Dimensiones ajustadas para adaptarse a pantallas más pequeñas
+        setPreferredSize(new Dimension(1100, 750));
 
-        // Ancho mínimo: 1000 | Alto mínimo: 900
-        setMinimumSize(new Dimension(1000, 900));
+        // Ancho mínimo: 950 | Alto mínimo: 700
+        setMinimumSize(new Dimension(950, 700));
         pack();
         setLocationRelativeTo(null);
 
@@ -151,27 +152,22 @@ public class VentanaVeterinaria extends VetBaseFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(0, 0, 0, 12);
-        gbc.weightx = 0.48;
+        gbc.weightx = 0.65; // Dar mayor prioridad de espacio al formulario
         gbc.weighty = 1.0;
         gbc.gridx = 0; gbc.gridy = 0;
         
-        JPanel leftContainer = new JPanel();
-        leftContainer.setLayout(new BoxLayout(leftContainer, BoxLayout.Y_AXIS));
+        JPanel leftContainer = new JPanel(new BorderLayout());
         leftContainer.setOpaque(false);
-
-        // Sin badge en la izquierda, todo el espacio vertical de la izquierda pertenece ahora al formulario.
-        // Solo un pequeño margen superior para evitar que el título se pegue a arriba.
-        leftContainer.add(Box.createVerticalStrut(10));
+        leftContainer.setBorder(new EmptyBorder(10, 0, 0, 0));
         
         JPanel formPanel = buildFormPanel();
-        formPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        leftContainer.add(formPanel);
+        leftContainer.add(formPanel, BorderLayout.CENTER);
 
         center.add(leftContainer, gbc);
 
         gbc.gridx = 1;
         gbc.insets = new Insets(0, 0, 0, 0); // Modificado para integrar los botones arriba
-        gbc.weightx = 0.52;
+        gbc.weightx = 0.35; // Reducir el espacio del panel de alertas
         
         JPanel rightContainer = new JPanel(new BorderLayout());
         rightContainer.setOpaque(false);
@@ -236,13 +232,18 @@ public class VentanaVeterinaria extends VetBaseFrame {
     // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildFormPanel() {
         JPanel card = createCard();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setLayout(new BorderLayout());
 
-        card.add(sectionLabel("DATOS DE LA MASCOTA"));
-        card.add(Box.createVerticalStrut(5));
-        card.add(fieldRow("Nombre",  txtNombreMascota = createTextField("Ej: Milo")));
-        card.add(Box.createVerticalStrut(3));
-        card.add(fieldRow("Edad (años)", txtEdadMascota = createTextField("Ej: 3")));
+        JPanel formContent = new JPanel();
+        formContent.setLayout(new BoxLayout(formContent, BoxLayout.Y_AXIS));
+        formContent.setOpaque(false);
+        formContent.setBorder(new EmptyBorder(0, 0, 0, 8)); // Margen derecho para el scroll
+
+        formContent.add(sectionLabel("DATOS DE LA MASCOTA"));
+        formContent.add(Box.createVerticalStrut(5));
+        formContent.add(fieldRow("Nombre",  txtNombreMascota = createTextField("Ej: Milo")));
+        formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Edad (años)", txtEdadMascota = createTextField("Ej: 3")));
         txtEdadMascota.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent e) {
                 if (!Character.isDigit(e.getKeyChar()) && e.getKeyChar() != java.awt.event.KeyEvent.VK_BACK_SPACE) {
@@ -250,16 +251,16 @@ public class VentanaVeterinaria extends VetBaseFrame {
                 }
             }
         });
-        card.add(Box.createVerticalStrut(3));
-        card.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
-        card.add(Box.createVerticalStrut(3));
+        formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
+        formContent.add(Box.createVerticalStrut(3));
         java.util.List<Parasito> parasitosDB = VeterinariaDAO.obtenerTodosLosParasitos();
-        card.add(fieldRow("Parásito diagnosticado",
+        formContent.add(fieldRow("Parásito diagnosticado",
                 cbParasito = createCombo(parasitosDB.toArray(new Parasito[0]))));
 
-        card.add(Box.createVerticalStrut(10));
-        card.add(sectionLabel("DATOS DEL PROPIETARIO"));
-        card.add(Box.createVerticalStrut(5));
+        formContent.add(Box.createVerticalStrut(10));
+        formContent.add(sectionLabel("DATOS DEL PROPIETARIO"));
+        formContent.add(Box.createVerticalStrut(5));
         
         JPanel pnlCedula = new JPanel(new BorderLayout(5, 0));
         pnlCedula.setOpaque(false);
@@ -270,17 +271,17 @@ public class VentanaVeterinaria extends VetBaseFrame {
         pnlCedula.add(txtCedula, BorderLayout.CENTER);
         pnlCedula.add(btnBuscar, BorderLayout.EAST);
         
-        card.add(fieldRow("Cédula/Documento", pnlCedula));
-        card.add(Box.createVerticalStrut(3));
-        card.add(fieldRow("Nombre completo", txtNombrePropietario = createTextField("Nombre del dueño")));
-        card.add(Box.createVerticalStrut(3));
-        card.add(fieldRow("Dirección del hogar", txtDireccion = createTextField("Calle, barrio, ciudad")));
-        card.add(Box.createVerticalStrut(3));
-        card.add(fieldRow("Departamento", cbDepartamento = createCombo(DEPARTAMENTOS)));
-        card.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Cédula/Documento", pnlCedula));
+        formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Nombre completo", txtNombrePropietario = createTextField("Nombre del dueño")));
+        formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Dirección del hogar", txtDireccion = createTextField("Calle, barrio, ciudad")));
+        formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Departamento", cbDepartamento = createCombo(DEPARTAMENTOS)));
+        formContent.add(Box.createVerticalStrut(3));
         JPanel rowEmbarazos = fieldRow("Número de embarazos previos (paridad)", txtNumeroEmbarazos = createTextField("Ej: 0, 1, 2..."));
         rowEmbarazos.setVisible(false);
-        card.add(rowEmbarazos);
+        formContent.add(rowEmbarazos);
         txtNumeroEmbarazos.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent e) {
                 if (!Character.isDigit(e.getKeyChar()) && e.getKeyChar() != java.awt.event.KeyEvent.VK_BACK_SPACE) {
@@ -289,28 +290,50 @@ public class VentanaVeterinaria extends VetBaseFrame {
             }
         });
 
-        card.add(Box.createVerticalStrut(10));
-        card.add(sectionLabel("FACTORES DE RIESGO EN EL HOGAR"));
-        card.add(Box.createVerticalStrut(5));
+        formContent.add(Box.createVerticalStrut(10));
+        formContent.add(sectionLabel("FACTORES DE RIESGO EN EL HOGAR"));
+        formContent.add(Box.createVerticalStrut(5));
 
-        JPanel riskRow = new JPanel(new GridLayout(1, 3, 12, 0));
+        JPanel riskRow = new JPanel(new GridLayout(1, 3, 6, 0)); // Espacio optimizado entre tarjetas
         riskRow.setOpaque(false);
         riskRow.setAlignmentX(Component.LEFT_ALIGNMENT); 
         // Garantizar que layout no se auto-oculte por BoxLayout: SIN restricciones MaximumSize estrictas!
         chkEmbarazadas = createCheckBox();
         chkEmbarazadas.addItemListener(e -> {
             rowEmbarazos.setVisible(chkEmbarazadas.isSelected());
-            rowEmbarazos.revalidate();
-            rowEmbarazos.repaint();
+            formContent.revalidate();
+            formContent.repaint();
         });
         riskRow.add(riskCard("🤰", "Embarazada", chkEmbarazadas));
         riskRow.add(riskCard("👶", "Niños",      chkNinos       = createCheckBox()));
         riskRow.add(riskCard("🌾", "Zona Rural", chkZonaRural   = createCheckBox()));
-        card.add(riskRow);
+        formContent.add(riskRow);
 
-        card.add(Box.createVerticalStrut(10));
-        card.add(buildButtonRow());
-        card.add(Box.createVerticalGlue()); // Combate el estiramiento absorbiendo espacio extra
+        formContent.add(Box.createVerticalStrut(10));
+        formContent.add(buildButtonRow());
+
+        // Envolver en BorderLayout.NORTH evita estiramientos y cortes verticales u horizontales
+        JPanel formWrapper = new JPanel(new BorderLayout()) {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                // Forza al panel a adaptarse dinámicamente al ancho visible del scroll
+                if (getParent() instanceof JViewport) d.width = getParent().getWidth();
+                return d;
+            }
+        };
+        formWrapper.setOpaque(false);
+        formWrapper.add(formContent, BorderLayout.NORTH);
+
+        JScrollPane scroll = new JScrollPane(formWrapper);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setBorder(null);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        styleScrollBar(scroll);
+
+        card.add(scroll, BorderLayout.CENTER);
 
         return card;
     }
@@ -373,11 +396,28 @@ public class VentanaVeterinaria extends VetBaseFrame {
         alertTextArea.setBorder(null);
         alertTextArea.setText("El resultado del análisis de riesgo de\nconvivencia aparecerá aquí una vez que\nguardes un diagnóstico.");
 
-        JScrollPane scroll = new JScrollPane(alertTextArea);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        scroll.setBorder(null);
-        styleScrollBar(scroll);
+        JScrollPane alertScroll = new JScrollPane(alertTextArea);
+        alertScroll.setOpaque(false);
+        alertScroll.getViewport().setOpaque(false);
+        alertScroll.setBorder(null);
+        styleScrollBar(alertScroll);
+
+        // Estado vacío (Empty State) con ilustración minimalista
+        JPanel emptyStatePanel = new JPanel(new GridBagLayout());
+        emptyStatePanel.setOpaque(false);
+        JLabel emptyIcon = new JLabel("🩺");
+        emptyIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 56));
+        JLabel emptyText = makeLabel("A la espera de diagnóstico...", FONT_LABEL.deriveFont(Font.ITALIC), () -> textMuted);
+        GridBagConstraints ec = new GridBagConstraints();
+        ec.gridx = 0; ec.gridy = 0;
+        emptyStatePanel.add(emptyIcon, ec);
+        ec.gridy = 1; ec.insets = new Insets(12, 0, 0, 0);
+        emptyStatePanel.add(emptyText, ec);
+
+        alertCenterWrapper = new JPanel(new CardLayout());
+        alertCenterWrapper.setOpaque(false);
+        alertCenterWrapper.add(emptyStatePanel, "EMPTY");
+        alertCenterWrapper.add(alertScroll, "DATA");
 
         // Updater específico para los textos del panel interactivo de la derecha
         updaters.add(() -> {
@@ -427,11 +467,18 @@ public class VentanaVeterinaria extends VetBaseFrame {
         footerRow.add(footer, BorderLayout.WEST);
         footerRow.add(rightTitles, BorderLayout.EAST);
 
-        JPanel mainBody = new JPanel(new BorderLayout(0, 8));
+        // Separador sutil a la izquierda para enmarcar el panel de análisis
+        JPanel mainBody = new JPanel(new BorderLayout(0, 8)) {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), 120));
+                g.fillRect(0, 5, 1, getHeight() - 10);
+            }
+        };
         mainBody.setOpaque(false);
-        mainBody.setBorder(new EmptyBorder(8, 0, 0, 0));
+        mainBody.setBorder(new EmptyBorder(8, 15, 0, 0));
         mainBody.add(sep,    BorderLayout.NORTH);
-        mainBody.add(scroll, BorderLayout.CENTER);
+        mainBody.add(alertCenterWrapper, BorderLayout.CENTER);
         mainBody.add(footerRow, BorderLayout.SOUTH);
         
         alertPanel.add(alertHeader, BorderLayout.NORTH);
@@ -483,6 +530,9 @@ public class VentanaVeterinaria extends VetBaseFrame {
         alertNivelLabel.setForeground(textMuted);
         alertMascotaLabel.setForeground(textMuted);
         alertTextArea.setForeground(textMuted);
+        if (alertCenterWrapper != null) {
+            ((CardLayout) alertCenterWrapper.getLayout()).show(alertCenterWrapper, "EMPTY");
+        }
     }
 
     private void guardarYMostrarAlerta() {
@@ -563,6 +613,9 @@ public class VentanaVeterinaria extends VetBaseFrame {
         alertTextArea.setForeground(textPrimary);
         alertTextArea.setText(alerta);
         alertTextArea.setCaretPosition(0);
+        if (alertCenterWrapper != null) {
+            ((CardLayout) alertCenterWrapper.getLayout()).show(alertCenterWrapper, "DATA");
+        }
     }
 
     private void verHistorial() {
@@ -720,43 +773,79 @@ public class VentanaVeterinaria extends VetBaseFrame {
     }
 
     private JPanel riskCard(String emoji, String label, JCheckBox cb) {
-        JPanel p = new JPanel(new BorderLayout(10, 0)) {
+        cb.setVisible(false); // Ocultar el checkbox real
+
+        JPanel p = new JPanel(new GridBagLayout()) {
+            boolean isHovered = false;
+            {
+                addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseEntered(java.awt.event.MouseEvent e) { isHovered = true; repaint(); }
+                    public void mouseExited(java.awt.event.MouseEvent e) { isHovered = false; repaint(); }
+                    public void mouseReleased(java.awt.event.MouseEvent e) { 
+                        if (contains(e.getPoint())) {
+                            cb.setSelected(!cb.isSelected());
+                        }
+                    }
+                });
+            }
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Color checkBg = new Color(dangerRed.getRed(), dangerRed.getGreen(), dangerRed.getBlue(), 30);
-                Color normalBg = isDarkMode ? new Color(30, 41, 55) : new Color(245, 248, 250);
-                Color bg = cb.isSelected() ? checkBg : normalBg;
+                
+                boolean sel = cb.isSelected();
+                Color bg, border;
+                
+                if (sel) {
+                    bg = isHovered ? accentTeal.brighter() : accentTeal;
+                    border = bg;
+                } else {
+                    bg = isDarkMode 
+                        ? (isHovered ? new Color(40, 55, 75) : new Color(30, 41, 55)) 
+                        : (isHovered ? new Color(235, 240, 245) : new Color(245, 248, 250));
+                    border = isHovered ? borderColor.darker() : borderColor;
+                }
                 
                 g2.setColor(bg);
-                g2.fill(new RoundRectangle2D.Float(0,0,getWidth()-1,getHeight()-1,8,8));
-                
-                Color selBorder = new Color(dangerRed.getRed(), dangerRed.getGreen(), dangerRed.getBlue(), 120);
-                Color border = cb.isSelected() ? selBorder : borderColor;
+                g2.fill(new RoundRectangle2D.Float(0,0,getWidth()-1,getHeight()-1,20,20));
                 g2.setColor(border);
                 g2.setStroke(new BasicStroke(1f));
-                g2.draw(new RoundRectangle2D.Float(0,0,getWidth()-1,getHeight()-1,8,8));
+                g2.draw(new RoundRectangle2D.Float(0,0,getWidth()-1,getHeight()-1,20,20));
                 g2.dispose();
             }
         };
+        p.setCursor(new Cursor(Cursor.HAND_CURSOR));
         p.setOpaque(false);
-        p.setBorder(new EmptyBorder(10, 12, 10, 12));
+        p.setBorder(new EmptyBorder(12, 5, 12, 5));
 
-        JLabel ic  = makeLabel(emoji, new Font("Segoe UI Emoji", Font.PLAIN, 24), () -> textPrimary);
-        JLabel lbl = makeLabel(label, FONT_LABEL, () -> textPrimary);
+        JLabel ic  = new JLabel(emoji);
+        ic.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(FONT_LABEL.deriveFont(Font.BOLD, 11f));
+        
+        Runnable fgUpdater = () -> {
+            boolean sel = cb.isSelected();
+            Color fg = sel ? Color.WHITE : textPrimary;
+            ic.setForeground(fg);
+            lbl.setForeground(fg);
+        };
+        fgUpdater.run();
+        updaters.add(fgUpdater);
+        
+        cb.addActionListener(e -> { fgUpdater.run(); p.repaint(); });
 
-        JPanel text = new JPanel(new GridLayout(2,1,0,2));
-        text.setOpaque(false);
-        text.add(lbl);
-        JLabel subLbl = makeLabel("Marcar si aplica", FONT_LABEL.deriveFont(10f), () -> textMuted);
-        text.add(subLbl);
+        GridBagConstraints gbc = new GridBagConstraints();
+        
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 6, 0);
+        p.add(ic, gbc);
 
-        p.add(ic,  BorderLayout.WEST);
-        p.add(text, BorderLayout.CENTER);
-        p.add(cb,  BorderLayout.EAST);
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        p.add(lbl, gbc);
+
+        p.add(cb); // Checkbox oculto acoplado para no romper lógica externa
 
         updaters.add(p::repaint);
-        cb.addActionListener(e -> p.repaint());
         return p;
     }
 
