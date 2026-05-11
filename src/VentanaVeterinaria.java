@@ -217,7 +217,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
         card.add(Box.createVerticalStrut(3));
-        java.util.List<Parasito> parasitosDB = ConexionDB.obtenerTodosLosParasitos();
+        java.util.List<Parasito> parasitosDB = VeterinariaDAO.obtenerTodosLosParasitos();
         card.add(fieldRow("Parásito diagnosticado",
                 cbParasito = createCombo(parasitosDB.toArray(new Parasito[0]))));
 
@@ -412,14 +412,14 @@ public class VentanaVeterinaria extends VetBaseFrame {
     }
 
     private void verEstadisticas() {
-        String stats = ConexionDB.obtenerEstadisticasEpidemiologicas();
+        String stats = VeterinariaDAO.obtenerEstadisticasEpidemiologicas();
         showStyledDialog("Dashboard Epidemiológico INS", stats, JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void buscarClienteAutocompletar() {
         String ced = txtCedula.getText().trim();
         if (ced.isEmpty()) return;
-        Propietario p = ConexionDB.buscarPropietarioPorCedula(ced);
+        Propietario p = VeterinariaDAO.buscarPropietarioPorCedula(ced);
         if (p != null) {
             txtNombrePropietario.setText(p.getNombre());
             txtDireccion.setText(p.getDireccion());
@@ -478,7 +478,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");
 
-        String alerta = diagnostico.evaluarRiesgoHumano();
+        String alerta = RiesgoService.evaluarRiesgoHumano(diagnostico);
         
         String nivelBD = "BAJO";
         if (alerta.contains("NIVEL: CRITICO")) nivelBD = "CRITICO";
@@ -489,14 +489,14 @@ public class VentanaVeterinaria extends VetBaseFrame {
         mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
         
         try {
-            int idProp = ConexionDB.upsertPropietario(propietario);
+            int idProp = VeterinariaDAO.upsertPropietario(propietario);
             propietario.setId(idProp);
             mascota.getPropietario().setId(idProp);
             
-            int idMasc = ConexionDB.upsertMascota(mascota);
+            int idMasc = VeterinariaDAO.upsertMascota(mascota);
             mascota.setId(idMasc);
             
-            ConexionDB.insertarDiagnostico(idMasc, selectedParasito.getId(), nivelBD);
+            VeterinariaDAO.insertarDiagnostico(idMasc, selectedParasito.getId(), nivelBD);
         } catch (java.sql.SQLException ex) {
             showStyledDialog("Error al guardar en BD", ex.getMessage(), JOptionPane.ERROR_MESSAGE);
         }
@@ -526,37 +526,8 @@ public class VentanaVeterinaria extends VetBaseFrame {
     }
 
     private void verHistorial() {
-        try (Connection con = ConexionDB.getConexion()) {
-            String sql =
-                    "SELECT d.fecha, d.nivel_riesgo, " +
-                            "m.nombre AS mascota, m.especie, " +
-                            "p.nombre AS propietario, p.cedula, p.direccion, " +
-                            "par.nombre AS parasito " +
-                            "FROM Diagnosticos d " +
-                            "JOIN Mascotas m ON d.id_mascota = m.id " +
-                            "JOIN Propietarios p ON m.id_propietario = p.id " +
-                            "JOIN Parasitos par ON d.id_parasito = par.id " +
-                            "ORDER BY d.fecha DESC";
-
-            Statement stmt = con.createStatement();
-            ResultSet rs   = stmt.executeQuery(sql);
-
-            String[] cols = {"Fecha", "Riesgo", "Cédula", "Propietario", "Dirección", "Mascota", "Especie", "Parásito"};
-            java.util.List<Object[]> rows = new java.util.ArrayList<>();
-            while (rs.next()) {
-                rows.add(new Object[]{
-                        rs.getString("fecha"),
-                        rs.getString("nivel_riesgo") != null ? rs.getString("nivel_riesgo") : "N/A",
-                        rs.getString("cedula") != null ? rs.getString("cedula") : "-",
-                        rs.getString("propietario"),
-                        rs.getString("direccion") != null ? rs.getString("direccion") : "-",
-                        rs.getString("mascota"),
-                        rs.getString("especie"),
-                        rs.getString("parasito")
-                });
-            }
-
-            Object[][] data = rows.toArray(new Object[0][]);
+        Object[][] data = VeterinariaDAO.obtenerHistorial();
+        String[] cols = {"Fecha", "Riesgo", "Cédula", "Propietario", "Dirección", "Mascota", "Especie", "Parásito"};
 
             JTable table = new JTable(data, cols) {
                 @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -627,10 +598,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
             dialog.getContentPane().setBackground(bgPanel);
             dialog.setBackground(bgPanel);
             dialog.setVisible(true);
-
-        } catch (SQLException ex) {
-            showStyledDialog("Error", ex.getMessage(), JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════

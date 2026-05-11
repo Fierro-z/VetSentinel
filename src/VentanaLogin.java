@@ -181,7 +181,7 @@ public class VentanaLogin extends VetBaseFrame {
             return;
         }
 
-        if (ConexionDB.validarUsuario(user, pass)) {
+        if (VeterinariaDAO.validarUsuario(user, pass)) {
             this.dispose();
             SwingUtilities.invokeLater(() -> {
                 VentanaVeterinaria v = new VentanaVeterinaria();
