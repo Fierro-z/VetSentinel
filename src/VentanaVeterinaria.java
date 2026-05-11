@@ -307,7 +307,9 @@ public class VentanaVeterinaria extends JFrame {
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Dirección del hogar", txtDireccion = createTextField("Calle, barrio, ciudad")));
         card.add(Box.createVerticalStrut(3));
-        card.add(fieldRow("Número de embarazos previos (paridad)", txtNumeroEmbarazos = createTextField("Ej: 0, 1, 2...")));
+        JPanel rowEmbarazos = fieldRow("Número de embarazos previos (paridad)", txtNumeroEmbarazos = createTextField("Ej: 0, 1, 2..."));
+        rowEmbarazos.setVisible(false);
+        card.add(rowEmbarazos);
         txtNumeroEmbarazos.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent e) {
                 if (!Character.isDigit(e.getKeyChar()) && e.getKeyChar() != java.awt.event.KeyEvent.VK_BACK_SPACE) {
@@ -324,7 +326,13 @@ public class VentanaVeterinaria extends JFrame {
         riskRow.setOpaque(false);
         riskRow.setAlignmentX(Component.LEFT_ALIGNMENT); 
         // Garantizar que layout no se auto-oculte por BoxLayout: SIN restricciones MaximumSize estrictas!
-        riskRow.add(riskCard("🤰", "Embarazada", chkEmbarazadas = createCheckBox()));
+        chkEmbarazadas = createCheckBox();
+        chkEmbarazadas.addItemListener(e -> {
+            rowEmbarazos.setVisible(chkEmbarazadas.isSelected());
+            rowEmbarazos.revalidate();
+            rowEmbarazos.repaint();
+        });
+        riskRow.add(riskCard("🤰", "Embarazada", chkEmbarazadas));
         riskRow.add(riskCard("👶", "Niños",      chkNinos       = createCheckBox()));
         riskRow.add(riskCard("🌾", "Zona Rural", chkZonaRural   = createCheckBox()));
         card.add(riskRow);

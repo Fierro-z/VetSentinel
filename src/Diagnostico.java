@@ -41,12 +41,18 @@ public class Diagnostico {
             }
         } else if (parasito.isAlertaEmbarazo() && dueno.isHayEmbarazadas()) {
             boolean esToxoplasma = p.toLowerCase().contains("toxoplasma");
-            if (esToxoplasma && dueno.getNumeroDeEmbarazosPrevios() >= 2) {
+            boolean esGato = mascota.getEspecie().equalsIgnoreCase("Gato");
+            
+            if (esToxoplasma && dueno.getNumeroDeEmbarazosPrevios() > 1) {
                 alerta += "NIVEL: CRITICO (ALTA EXPOSICIÓN EPIDEMIOLÓGICA)\n";
-                alerta += "Riesgo crítico: Gestante multípara (" + dueno.getNumeroDeEmbarazosPrevios() + " embarazos previos). El estudio del Hospital Hernando Moncaleano (Neiva, Huila) indica una alta prevalencia de exposición a Toxoplasma (56.7%) en multíparas. Requiere tamizaje serológico (IgG/IgM) urgente.\n\n";
+                alerta += "Riesgo crítico: Gestante multípara. Por datos epidemiológicos, las mujeres con embarazos previos tienen mayor probabilidad de exposición acumulada al parásito en su entorno.\n";
+                if (esGato) alerta += "¡ALERTA FELINA CRÍTICA! Transmisión directa por ooquistes en heces de gatos.\n\n";
+                else alerta += "\n";
             } else if (esToxoplasma) {
                 alerta += "NIVEL: CRITICO\n";
-                alerta += "Riesgo crítico por embarazo. Prevalencia de exposición a Toxoplasma en primíparas: 50.3%. " + parasito.getRiesgoPrincipal() + "\n\n";
+                alerta += "Riesgo crítico por embarazo. Requiere control preventivo de exposición a Toxoplasma. " + parasito.getRiesgoPrincipal() + "\n";
+                if (esGato) alerta += "¡ALERTA FELINA CRÍTICA! Transmisión directa por ooquistes en heces de gatos.\n\n";
+                else alerta += "\n";
             } else {
                 alerta += "NIVEL: CRITICO\n";
                 alerta += "Riesgo crítico por factor embarazo: " + parasito.getRiesgoPrincipal() + "\n\n";

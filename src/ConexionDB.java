@@ -119,6 +119,28 @@ public class ConexionDB {
                 psInsLeish.setInt(6, 1);
                 psInsLeish.executeUpdate();
             }
+            
+            // Upsert Toxoplasmosis
+            var rsCheckToxo = stmt.executeQuery("SELECT id FROM Parasitos WHERE nombre LIKE '%Toxoplasma%'");
+            if (rsCheckToxo.next()) {
+                int idToxo = rsCheckToxo.getInt(1);
+                PreparedStatement psUpdToxo = con.prepareStatement(
+                    "UPDATE Parasitos SET nombre = 'Toxoplasmosis (Toxoplasma gondii)', riesgo_principal = ?, medidas_preventivas = ?, alerta_embarazo = 1 WHERE id = ?");
+                psUpdToxo.setString(1, "Transmisión congénita. Riesgo severo para el feto si la madre se infecta por primera vez durante el embarazo.");
+                psUpdToxo.setString(2, "Evitar que la mujer embarazada manipule la caja de arena del gato y asegurar que la carne consumida en el hogar esté bien cocida.");
+                psUpdToxo.setInt(3, idToxo);
+                psUpdToxo.executeUpdate();
+            } else {
+                PreparedStatement psInsToxo = con.prepareStatement(
+                    "INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
+                psInsToxo.setString(1, "Toxoplasmosis (Toxoplasma gondii)");
+                psInsToxo.setString(2, "Transmisión congénita. Riesgo severo para el feto si la madre se infecta por primera vez durante el embarazo.");
+                psInsToxo.setString(3, "Evitar que la mujer embarazada manipule la caja de arena del gato y asegurar que la carne consumida en el hogar esté bien cocida.");
+                psInsToxo.setInt(4, 1);
+                psInsToxo.setInt(5, 0);
+                psInsToxo.setInt(6, 0);
+                psInsToxo.executeUpdate();
+            }
 
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
             if (rsUsr.next() && rsUsr.getInt(1) == 0) {
