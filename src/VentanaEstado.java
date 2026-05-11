@@ -62,6 +62,16 @@ public class VentanaEstado extends VetBaseFrame {
             actualizarDatos();
         });
 
+        JButton btnVolver = new JButton("⬅ Volver al menú");
+        btnVolver.setFont(FONT_BTN);
+        btnVolver.setForeground(textMuted);
+        updaters.add(() -> btnVolver.setForeground(textMuted));
+        btnVolver.setContentAreaFilled(false);
+        btnVolver.setBorderPainted(false);
+        btnVolver.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVolver.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+
+        rightPanel.add(btnVolver);
         rightPanel.add(btnActualizar);
         rightPanel.add(btnThemeToggle);
 

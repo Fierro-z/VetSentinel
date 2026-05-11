@@ -147,6 +147,15 @@ public class VentanaVeterinaria extends VetBaseFrame {
         JPanel topRightRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         topRightRow.setOpaque(false);
 
+        JButton btnVolver = new JButton("⬅ Volver al menú");
+        btnVolver.setFont(FONT_BTN);
+        btnVolver.setForeground(textMuted);
+        updaters.add(() -> btnVolver.setForeground(textMuted));
+        btnVolver.setContentAreaFilled(false);
+        btnVolver.setBorderPainted(false);
+        btnVolver.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVolver.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+
         JPanel badge = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         badge.setOpaque(false);
         JLabel dot = new JLabel("●");
@@ -181,6 +190,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         btnThemeToggle.setPreferredSize(new Dimension(135, 36));
         btnThemeToggle.addActionListener(e -> alternarTema());
 
+        topRightRow.add(btnVolver);
         topRightRow.add(badge);
         topRightRow.add(btnThemeToggle);
 
