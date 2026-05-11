@@ -100,9 +100,34 @@ public class VentanaVeterinaria extends VetBaseFrame {
         // Fila superior izquierda sobre el banner para el botón de retroceso
         JPanel topLeftRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         topLeftRow.setOpaque(false);
-        JButton btnVolverTop = createButton("⬅ Volver al menú", () -> dangerRed);
-        btnVolverTop.setPreferredSize(new Dimension(145, 36));
+
+        JButton btnVolverTop = new JButton() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(isDarkMode ? new Color(30, 41, 55, 220) : new Color(255, 255, 255, 220));
+                if (getModel().isRollover()) g2.setColor(isDarkMode ? new Color(45, 60, 80, 255) : new Color(235, 240, 245, 255));
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.setColor(borderColor);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.setColor(textPrimary);
+                g2.setFont(FONT_BTN);
+                FontMetrics fm = g2.getFontMetrics();
+                String text = "⬅ Volver";
+                int x = (getWidth() - fm.stringWidth(text)) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(text, x, y);
+                g2.dispose();
+            }
+        };
+        updaters.add(btnVolverTop::repaint);
+        btnVolverTop.setPreferredSize(new Dimension(85, 30));
+        btnVolverTop.setContentAreaFilled(false);
+        btnVolverTop.setBorderPainted(false);
+        btnVolverTop.setFocusPainted(false);
+        btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVolverTop.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+
         topLeftRow.add(btnVolverTop);
         imageContainer.add(topLeftRow, BorderLayout.NORTH);
 

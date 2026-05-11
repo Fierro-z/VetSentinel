@@ -50,10 +50,40 @@ public class VentanaEstado extends VetBaseFrame {
         // Panel izquierdo que agrupa el botón Volver y los títulos
         JPanel leftPanel = new JPanel(new BorderLayout(15, 0));
         leftPanel.setOpaque(false);
-        JButton btnVolverTop = createButton("⬅ Volver", () -> dangerRed);
-        btnVolverTop.setPreferredSize(new Dimension(110, 36));
+
+        JButton btnVolverTop = new JButton() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(isDarkMode ? new Color(30, 41, 55, 220) : new Color(255, 255, 255, 220));
+                if (getModel().isRollover()) g2.setColor(isDarkMode ? new Color(45, 60, 80, 255) : new Color(235, 240, 245, 255));
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.setColor(borderColor);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.setColor(textPrimary);
+                g2.setFont(FONT_BTN);
+                FontMetrics fm = g2.getFontMetrics();
+                String text = "⬅ Volver";
+                int x = (getWidth() - fm.stringWidth(text)) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(text, x, y);
+                g2.dispose();
+            }
+        };
+        updaters.add(btnVolverTop::repaint);
+        btnVolverTop.setPreferredSize(new Dimension(85, 30));
+        btnVolverTop.setContentAreaFilled(false);
+        btnVolverTop.setBorderPainted(false);
+        btnVolverTop.setFocusPainted(false);
+        btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVolverTop.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
-        leftPanel.add(btnVolverTop, BorderLayout.WEST);
+
+        // Envolver el botón para evitar que se estire verticalmente
+        JPanel btnWrapper = new JPanel(new GridBagLayout());
+        btnWrapper.setOpaque(false);
+        btnWrapper.add(btnVolverTop);
+
+        leftPanel.add(btnWrapper, BorderLayout.WEST);
         leftPanel.add(titles, BorderLayout.CENTER);
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
