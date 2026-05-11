@@ -16,9 +16,11 @@ public class VentanaLogin extends VetBaseFrame {
     private JPasswordField txtPassword;
     private JButton btnLogin;
     private JButton btnThemeToggle;
+    private String modo;
 
-    public VentanaLogin() {
-        super("VetSentinel — Inicio de Sesión");
+    public VentanaLogin(String modo) {
+        super("VetSentinel — Login " + (modo.equals("ESTADO") ? "Salud Pública" : "Clínica"));
+        this.modo = modo;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         root = new JPanel(new BorderLayout(0, 0));
@@ -130,7 +132,7 @@ public class VentanaLogin extends VetBaseFrame {
         title.setForeground(accentTeal);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitle = new JLabel("Por favor, inicia sesión para continuar.");
+        JLabel subtitle = new JLabel(modo.equals("ESTADO") ? "Acceso exclusivo Estado / INS." : "Por favor, inicia sesión para continuar.");
         subtitle.setFont(FONT_LABEL);
         updaters.add(() -> subtitle.setForeground(textMuted));
         subtitle.setForeground(textMuted);
@@ -157,6 +159,18 @@ public class VentanaLogin extends VetBaseFrame {
         card.add(fieldRow("Contraseña", txtPassword));
         card.add(Box.createVerticalStrut(35));
         card.add(btnLogin);
+        
+        card.add(Box.createVerticalStrut(15));
+        JButton btnVolver = new JButton("⬅ Volver al menú de módulos");
+        btnVolver.setFont(FONT_LABEL);
+        updaters.add(() -> btnVolver.setForeground(textMuted));
+        btnVolver.setForeground(textMuted);
+        btnVolver.setContentAreaFilled(false);
+        btnVolver.setBorderPainted(false);
+        btnVolver.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnVolver.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnVolver.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+        card.add(btnVolver);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -177,10 +191,23 @@ public class VentanaLogin extends VetBaseFrame {
         }
 
         if (VeterinariaDAO.validarUsuario(user, pass)) {
+            if (modo.equals("ESTADO") && !user.equalsIgnoreCase("estado")) {
+                JOptionPane.showMessageDialog(this, "Acceso denegado. Este módulo es exclusivo para el Estado.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (modo.equals("CLINICA") && user.equalsIgnoreCase("estado")) {
+                JOptionPane.showMessageDialog(this, "El usuario 'estado' no puede acceder a la vista clínica.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             this.dispose();
             SwingUtilities.invokeLater(() -> {
-                VentanaVeterinaria v = new VentanaVeterinaria();
-                v.setVisible(true);
+                if (modo.equals("ESTADO")) {
+                    VentanaEstado v = new VentanaEstado();
+                    v.setVisible(true);
+                } else {
+                    VentanaVeterinaria v = new VentanaVeterinaria();
+                    v.setVisible(true);
+                }
             });
         } else {
             JOptionPane.showMessageDialog(this, "Credenciales incorrectas.", "Error", JOptionPane.ERROR_MESSAGE);

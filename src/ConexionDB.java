@@ -36,6 +36,7 @@ public class ConexionDB {
                     "cedula TEXT UNIQUE," +
                     "nombre TEXT NOT NULL," +
                     "direccion TEXT," +
+                    "departamento TEXT DEFAULT 'No especificado'," +
                     "tiene_ninos INTEGER DEFAULT 0," +
                     "hay_embarazadas INTEGER DEFAULT 0," +
                     "numero_embarazos_previos INTEGER DEFAULT 0," +
@@ -70,6 +71,7 @@ public class ConexionDB {
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_embarazo INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_ninos INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_zona_rural INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
+            try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN departamento TEXT DEFAULT 'No especificado'"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN zona_rural INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN numero_embarazos_previos INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
 
@@ -124,7 +126,9 @@ public class ConexionDB {
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
             if (rsUsr.next() && rsUsr.getInt(1) == 0) {
                 stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('admin', 'admin123')");
+                stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('estado', 'estado123')");
             }
+            try { stmt.execute("INSERT OR IGNORE INTO Usuarios (username, password) VALUES ('estado', 'estado123')"); } catch (SQLException ignore) {}
 
             System.out.println("Base de datos lista: vetsentinel.db");
 

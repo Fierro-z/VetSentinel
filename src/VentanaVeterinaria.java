@@ -21,6 +21,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private JTextField       txtCedula;
     private JTextField       txtNombrePropietario;
     private JTextField       txtDireccion;
+    private JComboBox<String> cbDepartamento;
     private JCheckBox        chkEmbarazadas;
     private JCheckBox        chkNinos;
     private JCheckBox        chkZonaRural;
@@ -34,6 +35,13 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private JLabel    alertNivelLabel;
     private JTextArea alertTextArea;
     private JLabel    alertMascotaLabel;
+
+    private static final String[] DEPARTAMENTOS = {
+        "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", 
+        "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", 
+        "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "San Andrés y Providencia", "Santander", 
+        "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"
+    };
 
     public VentanaVeterinaria() {
         super("VetSentinel — Módulo Clínico Veterinario");
@@ -235,6 +243,8 @@ public class VentanaVeterinaria extends VetBaseFrame {
         card.add(Box.createVerticalStrut(3));
         card.add(fieldRow("Dirección del hogar", txtDireccion = createTextField("Calle, barrio, ciudad")));
         card.add(Box.createVerticalStrut(3));
+        card.add(fieldRow("Departamento", cbDepartamento = createCombo(DEPARTAMENTOS)));
+        card.add(Box.createVerticalStrut(3));
         JPanel rowEmbarazos = fieldRow("Número de embarazos previos (paridad)", txtNumeroEmbarazos = createTextField("Ej: 0, 1, 2..."));
         rowEmbarazos.setVisible(false);
         card.add(rowEmbarazos);
@@ -418,6 +428,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         if (p != null) {
             txtNombrePropietario.setText(p.getNombre());
             txtDireccion.setText(p.getDireccion());
+            if (p.getDepartamento() != null) cbDepartamento.setSelectedItem(p.getDepartamento());
             txtNumeroEmbarazos.setText(String.valueOf(p.getNumeroDeEmbarazosPrevios()));
             chkNinos.setSelected(p.isTieneNinos());
             chkEmbarazadas.setSelected(p.isHayEmbarazadas());
@@ -461,6 +472,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         String cedula           = txtCedula.getText().trim();
         String nombrePropietario = txtNombrePropietario.getText().trim();
         String direccion        = txtDireccion.getText().trim();
+        String departamento     = cbDepartamento.getSelectedItem().toString();
         boolean embarazada      = chkEmbarazadas.isSelected();
         boolean ninos           = chkNinos.isSelected();
         boolean zonaRural       = chkZonaRural.isSelected();
@@ -468,7 +480,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         try { numeroEmbarazos = Integer.parseInt(txtNumeroEmbarazos.getText().trim()); }
         catch (NumberFormatException ignored) {}
 
-        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, ninos, embarazada, numeroEmbarazos, zonaRural);
+        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, departamento, ninos, embarazada, numeroEmbarazos, zonaRural);
         Mascota     mascota     = new Mascota(0, nombreMascota, especie, edad, propietario);
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");

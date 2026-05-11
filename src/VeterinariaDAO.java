@@ -5,6 +5,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class VeterinariaDAO {
 
@@ -34,7 +36,7 @@ public class VeterinariaDAO {
             String sql =
                     "SELECT d.fecha, d.nivel_riesgo, " +
                             "m.nombre AS mascota, m.especie, " +
-                            "p.nombre AS propietario, p.cedula, p.direccion, " +
+                            "p.nombre AS propietario, p.cedula, p.direccion, p.departamento, " +
                             "par.nombre AS parasito " +
                             "FROM Diagnosticos d " +
                             "JOIN Mascotas m ON d.id_mascota = m.id " +
@@ -52,7 +54,7 @@ public class VeterinariaDAO {
                         rs.getString("nivel_riesgo") != null ? rs.getString("nivel_riesgo") : "N/A",
                         rs.getString("cedula") != null ? rs.getString("cedula") : "-",
                         rs.getString("propietario"),
-                        rs.getString("direccion") != null ? rs.getString("direccion") : "-",
+                        (rs.getString("direccion") != null ? rs.getString("direccion") : "-") + " (" + (rs.getString("departamento") != null ? rs.getString("departamento") : "") + ")",
                         rs.getString("mascota"),
                         rs.getString("especie"),
                         rs.getString("parasito")
@@ -94,26 +96,28 @@ public class VeterinariaDAO {
             if (rs.next()) {
                 int id = rs.getInt(1);
                 PreparedStatement psUpd = con.prepareStatement(
-                        "UPDATE Propietarios SET nombre = ?, direccion = ?, tiene_ninos = ?, hay_embarazadas = ?, numero_embarazos_previos = ?, zona_rural = ? WHERE id = ?");
+                        "UPDATE Propietarios SET nombre = ?, direccion = ?, departamento = ?, tiene_ninos = ?, hay_embarazadas = ?, numero_embarazos_previos = ?, zona_rural = ? WHERE id = ?");
                 psUpd.setString(1, p.getNombre());
                 psUpd.setString(2, p.getDireccion());
-                psUpd.setInt(3, p.isTieneNinos() ? 1 : 0);
-                psUpd.setInt(4, p.isHayEmbarazadas() ? 1 : 0);
-                psUpd.setInt(5, p.getNumeroDeEmbarazosPrevios());
-                psUpd.setInt(6, p.isZonaRural() ? 1 : 0);
-                psUpd.setInt(7, id);
+                psUpd.setString(3, p.getDepartamento());
+                psUpd.setInt(4, p.isTieneNinos() ? 1 : 0);
+                psUpd.setInt(5, p.isHayEmbarazadas() ? 1 : 0);
+                psUpd.setInt(6, p.getNumeroDeEmbarazosPrevios());
+                psUpd.setInt(7, p.isZonaRural() ? 1 : 0);
+                psUpd.setInt(8, id);
                 psUpd.executeUpdate();
                 return id;
             } else {
                 PreparedStatement psIns = con.prepareStatement(
-                        "INSERT INTO Propietarios (cedula, nombre, direccion, tiene_ninos, hay_embarazadas, numero_embarazos_previos, zona_rural) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        "INSERT INTO Propietarios (cedula, nombre, direccion, departamento, tiene_ninos, hay_embarazadas, numero_embarazos_previos, zona_rural) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 psIns.setString(1, p.getCedula());
                 psIns.setString(2, p.getNombre());
                 psIns.setString(3, p.getDireccion());
-                psIns.setInt(4, p.isTieneNinos() ? 1 : 0);
-                psIns.setInt(5, p.isHayEmbarazadas() ? 1 : 0);
-                psIns.setInt(6, p.getNumeroDeEmbarazosPrevios());
-                psIns.setInt(7, p.isZonaRural() ? 1 : 0);
+                psIns.setString(4, p.getDepartamento());
+                psIns.setInt(5, p.isTieneNinos() ? 1 : 0);
+                psIns.setInt(6, p.isHayEmbarazadas() ? 1 : 0);
+                psIns.setInt(7, p.getNumeroDeEmbarazosPrevios());
+                psIns.setInt(8, p.isZonaRural() ? 1 : 0);
                 psIns.executeUpdate();
                 ResultSet keys = con.createStatement().executeQuery("SELECT last_insert_rowid()");
                 if (keys.next()) return keys.getInt(1);
@@ -133,6 +137,7 @@ public class VeterinariaDAO {
                         rs.getString("cedula"),
                         rs.getString("nombre"),
                         rs.getString("direccion"),
+                        rs.getString("departamento"),
                         rs.getInt("tiene_ninos") == 1,
                         rs.getInt("hay_embarazadas") == 1,
                         rs.getInt("numero_embarazos_previos"),
@@ -183,6 +188,61 @@ public class VeterinariaDAO {
             psDiag.setString(3, nivelRiesgo);
             psDiag.executeUpdate();
         }
+    }
+
+    public static Map<String, String> obtenerRiesgoPorDepartamento() {
+        Map<String, String> mapa = new HashMap<>();
+        try (Connection con = ConexionDB.getConexion(); Statement stmt = con.createStatement()) {
+            String sql = "SELECT p.departamento, " +
+                         "MAX(CASE d.nivel_riesgo " +
+                         "WHEN 'CRITICO' THEN 4 " +
+                         "WHEN 'ALTO' THEN 3 " +
+                         "WHEN 'MEDIO' THEN 2 " +
+                         "WHEN 'MODERADO' THEN 2 " +
+                         "WHEN 'BAJO' THEN 1 ELSE 0 END) as max_risk " +
+                         "FROM Diagnosticos d " +
+                         "JOIN Mascotas m ON d.id_mascota = m.id " +
+                         "JOIN Propietarios p ON m.id_propietario = p.id " +
+                         "GROUP BY p.departamento";
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String dep = rs.getString("departamento");
+                int maxRisk = rs.getInt("max_risk");
+                String riesgoStr = "BAJO";
+                if (maxRisk == 4) riesgoStr = "CRITICO";
+                else if (maxRisk == 3) riesgoStr = "ALTO";
+                else if (maxRisk == 2) riesgoStr = "MEDIO";
+                mapa.put(dep, riesgoStr);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error en obtenerRiesgoPorDepartamento: " + e.getMessage());
+        }
+        return mapa;
+    }
+
+    public static List<String[]> obtenerCepasPorUbicacion() {
+        List<String[]> lista = new ArrayList<>();
+        try (Connection con = ConexionDB.getConexion(); Statement stmt = con.createStatement()) {
+            String sql = "SELECT p.departamento, par.nombre as parasito, count(*) as casos, d.nivel_riesgo " +
+                         "FROM Diagnosticos d " +
+                         "JOIN Mascotas m ON d.id_mascota = m.id " +
+                         "JOIN Propietarios p ON m.id_propietario = p.id " +
+                         "JOIN Parasitos par ON d.id_parasito = par.id " +
+                         "GROUP BY p.departamento, par.nombre, d.nivel_riesgo " +
+                         "ORDER BY p.departamento";
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                lista.add(new String[]{
+                        rs.getString("departamento") != null ? rs.getString("departamento") : "N/A",
+                        rs.getString("parasito"),
+                        String.valueOf(rs.getInt("casos")),
+                        rs.getString("nivel_riesgo")
+                });
+            }
+        } catch (SQLException e) {
+            System.out.println("Error en obtenerCepasPorUbicacion: " + e.getMessage());
+        }
+        return lista;
     }
 
     // NOTA DE SEGURIDAD:
