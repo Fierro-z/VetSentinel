@@ -2,12 +2,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.geom.*;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
 
 public class VentanaVeterinaria extends VetBaseFrame {
 

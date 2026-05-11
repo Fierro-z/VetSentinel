@@ -1,11 +1,7 @@
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.geom.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
 
 public class VentanaLogin extends VetBaseFrame {
 
@@ -13,7 +9,6 @@ public class VentanaLogin extends VetBaseFrame {
     private static final Font FONT_TITLE   = new Font("SansSerif", Font.BOLD,  24);
     private static final Font FONT_LABEL   = new Font("SansSerif", Font.PLAIN, 13);
     private static final Font FONT_INPUT   = new Font("SansSerif", Font.PLAIN, 14);
-    private static final Font FONT_BTN     = new Font("SansSerif", Font.BOLD,  14);
 
     // ── Componentes de UI ──────────────────────────────────────────────────────
     private JPanel root;
