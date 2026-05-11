@@ -276,6 +276,11 @@ public class ConexionDB {
         }
     }
 
+    // NOTA DE SEGURIDAD:
+    // Las contraseñas se guardan en texto plano en la base de datos SQLite.
+    // Esto es válido para un proyecto académico, pero para un entorno de producción
+    // se debe implementar una función de hashing criptográfico (ej. BCrypt, Argon2)
+    // para asegurar las credenciales.
     public static boolean validarUsuario(String username, String password) {
         try (Connection con = getConexion()) {
             PreparedStatement ps = con.prepareStatement("SELECT * FROM Usuarios WHERE username = ? AND password = ?");
