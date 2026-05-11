@@ -48,6 +48,7 @@ public class VentanaVeterinaria extends JFrame {
     private JTextField       txtDireccion;
     private JCheckBox        chkEmbarazadas;
     private JCheckBox        chkNinos;
+    private JCheckBox        chkZonaRural;
     private JButton          btnGuardar;
     private JButton          btnVerHistorial;
     private JButton          btnEstadisticas;
@@ -309,12 +310,13 @@ public class VentanaVeterinaria extends JFrame {
         card.add(sectionLabel("FACTORES DE RIESGO EN EL HOGAR"));
         card.add(Box.createVerticalStrut(5));
 
-        JPanel riskRow = new JPanel(new GridLayout(1, 2, 12, 0));
+        JPanel riskRow = new JPanel(new GridLayout(1, 3, 12, 0));
         riskRow.setOpaque(false);
         riskRow.setAlignmentX(Component.LEFT_ALIGNMENT); 
         // Garantizar que layout no se auto-oculte por BoxLayout: SIN restricciones MaximumSize estrictas!
-        riskRow.add(riskCard("🤰", "Mujer embarazada", chkEmbarazadas = createCheckBox()));
-        riskRow.add(riskCard("👶", "Niños menores",    chkNinos       = createCheckBox()));
+        riskRow.add(riskCard("🤰", "Embarazada", chkEmbarazadas = createCheckBox()));
+        riskRow.add(riskCard("👶", "Niños",      chkNinos       = createCheckBox()));
+        riskRow.add(riskCard("🌾", "Zona Rural", chkZonaRural   = createCheckBox()));
         card.add(riskRow);
 
         card.add(Box.createVerticalStrut(10));
@@ -472,8 +474,10 @@ public class VentanaVeterinaria extends JFrame {
             txtDireccion.setText(p.getDireccion());
             chkNinos.setSelected(p.isTieneNinos());
             chkEmbarazadas.setSelected(p.isHayEmbarazadas());
+            chkZonaRural.setSelected(p.isZonaRural());
             chkNinos.repaint();
             chkEmbarazadas.repaint();
+            chkZonaRural.repaint();
             showStyledDialog("Búsqueda Exitosa", "Perfil de cliente cargado de la base de datos.", JOptionPane.INFORMATION_MESSAGE);
         } else {
             showStyledDialog("Búsqueda", "Cliente no fue encontrado. Procede registrarlo nuevo.", JOptionPane.INFORMATION_MESSAGE);
@@ -512,8 +516,9 @@ public class VentanaVeterinaria extends JFrame {
         String direccion        = txtDireccion.getText().trim();
         boolean embarazada      = chkEmbarazadas.isSelected();
         boolean ninos           = chkNinos.isSelected();
+        boolean zonaRural       = chkZonaRural.isSelected();
 
-        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, ninos, embarazada);
+        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, ninos, embarazada, zonaRural);
         Mascota     mascota     = new Mascota(0, nombreMascota, especie, edad, propietario);
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");

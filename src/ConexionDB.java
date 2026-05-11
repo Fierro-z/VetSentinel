@@ -39,7 +39,8 @@ public class ConexionDB {
                     "nombre TEXT NOT NULL," +
                     "direccion TEXT," +
                     "tiene_ninos INTEGER DEFAULT 0," +
-                    "hay_embarazadas INTEGER DEFAULT 0)");
+                    "hay_embarazadas INTEGER DEFAULT 0," +
+                    "zona_rural INTEGER DEFAULT 0)");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS Mascotas (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -76,22 +77,47 @@ public class ConexionDB {
             try {
                 stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_embarazo INTEGER DEFAULT 0");
                 stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_ninos INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_zona_rural INTEGER DEFAULT 0");
                 
                 // Actualizar las banderas de los seeds originales si la migración de esquema acaba de ocurrir
                 stmt.execute("UPDATE Parasitos SET alerta_embarazo = 1 WHERE nombre = 'Toxoplasma gondii'");
                 stmt.execute("UPDATE Parasitos SET alerta_ninos = 1 WHERE nombre = 'Leishmania spp'");
                 stmt.execute("UPDATE Parasitos SET alerta_ninos = 1 WHERE nombre = 'Toxocara canis/cati'");
             } catch (SQLException ignore) {}
+            
+            try {
+                stmt.execute("ALTER TABLE Propietarios ADD COLUMN zona_rural INTEGER DEFAULT 0");
+            } catch (SQLException ignore) {}
 
             // Insertar parásitos base solo si la tabla está vacía
             var rs = stmt.executeQuery("SELECT COUNT(*) FROM Parasitos");
             if (rs.next() && rs.getInt(1) == 0) {
-                stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos) VALUES " +
-                        "('Toxoplasma gondii', 'Transmision congenita. Seroprevalencia 40-60% en Colombia (INS).', 'No limpiar arenero sin guantes. Cocinar carne a mas de 70 grados. Lavar vegetales.', 1, 0)");
-                stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos) VALUES " +
-                        "('Leishmania spp', 'Leishmaniasis cutanea vectorial. Endemica en Antioquia (INS BES SE26 2025).', 'Control del vector Lutzomyia. Uso de toldillos y repelente. Fumigacion peridomiciliar.', 0, 1)");
-                stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos) VALUES " +
-                        "('Toxocara canis/cati', 'Larva migrans visceral/cutanea en ninos. Prevalencia perros 7-20% (INS).', 'Desparasitar mascota cada 3 meses. Evitar contacto de ninos con suelo contaminado.', 0, 1)");
+                stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES " +
+                        "('Toxoplasma gondii', 'Transmision congenita. Seroprevalencia 40-60% en Colombia (INS).', 'No limpiar arenero sin guantes. Cocinar carne a mas de 70 grados. Lavar vegetales.', 1, 0, 0)");
+                stmt.execute("INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES " +
+                        "('Toxocara canis/cati', 'Larva migrans visceral/cutanea en ninos. Prevalencia perros 7-20% (INS).', 'Desparasitar mascota cada 3 meses. Evitar contacto de ninos con suelo contaminado.', 0, 1, 0)");
+            }
+            
+            // Upsert Leishmaniasis con los últimos datos epidemiológicos (BES SE26 2025)
+            var rsCheckLeish = stmt.executeQuery("SELECT id FROM Parasitos WHERE nombre LIKE '%Leishmania%'");
+            if (rsCheckLeish.next()) {
+                int idLeish = rsCheckLeish.getInt(1);
+                PreparedStatement psUpdLeish = con.prepareStatement(
+                    "UPDATE Parasitos SET nombre = 'Leishmaniasis', riesgo_principal = ?, medidas_preventivas = ?, alerta_ninos = 1, alerta_zona_rural = 1 WHERE id = ?");
+                psUpdLeish.setString(1, "Riesgo rural (82.7% casos) y domiciliario en niños (9.4%). Zonas críticas: Risaralda, Atlántico, Caldas, La Guajira, Santander, Boyacá, Cesar, Arauca y Tolima.");
+                psUpdLeish.setString(2, "Control de vectores (Lutzomyia sp.) y uso de toldillos, especialmente si la mascota duerme dentro o cerca de la casa. Fumigación peridomiciliar.");
+                psUpdLeish.setInt(3, idLeish);
+                psUpdLeish.executeUpdate();
+            } else {
+                PreparedStatement psInsLeish = con.prepareStatement(
+                    "INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
+                psInsLeish.setString(1, "Leishmaniasis");
+                psInsLeish.setString(2, "Riesgo rural (82.7% casos) y domiciliario en niños (9.4%). Zonas críticas: Risaralda, Atlántico, Caldas, La Guajira, Santander, Boyacá, Cesar, Arauca y Tolima.");
+                psInsLeish.setString(3, "Control de vectores (Lutzomyia sp.) y uso de toldillos, especialmente si la mascota duerme dentro o cerca de la casa. Fumigación peridomiciliar.");
+                psInsLeish.setInt(4, 0);
+                psInsLeish.setInt(5, 1);
+                psInsLeish.setInt(6, 1);
+                psInsLeish.executeUpdate();
             }
 
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
@@ -109,7 +135,7 @@ public class ConexionDB {
     public static List<Parasito> obtenerTodosLosParasitos() {
         List<Parasito> lista = new ArrayList<>();
         try (Connection con = getConexion(); Statement stmt = con.createStatement()) {
-            ResultSet rs = stmt.executeQuery("SELECT id, nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos FROM Parasitos");
+            ResultSet rs = stmt.executeQuery("SELECT id, nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural FROM Parasitos");
             while (rs.next()) {
                 lista.add(new Parasito(
                         rs.getInt("id"),
@@ -117,7 +143,8 @@ public class ConexionDB {
                         rs.getString("riesgo_principal"),
                         rs.getString("medidas_preventivas"),
                         rs.getInt("alerta_embarazo") == 1,
-                        rs.getInt("alerta_ninos") == 1
+                        rs.getInt("alerta_ninos") == 1,
+                        rs.getInt("alerta_zona_rural") == 1
                 ));
             }
         } catch (SQLException e) {
@@ -155,22 +182,24 @@ public class ConexionDB {
             if (rs.next()) {
                 int id = rs.getInt(1);
                 PreparedStatement psUpd = con.prepareStatement(
-                        "UPDATE Propietarios SET nombre = ?, direccion = ?, tiene_ninos = ?, hay_embarazadas = ? WHERE id = ?");
+                        "UPDATE Propietarios SET nombre = ?, direccion = ?, tiene_ninos = ?, hay_embarazadas = ?, zona_rural = ? WHERE id = ?");
                 psUpd.setString(1, p.getNombre());
                 psUpd.setString(2, p.getDireccion());
                 psUpd.setInt(3, p.isTieneNinos() ? 1 : 0);
                 psUpd.setInt(4, p.isHayEmbarazadas() ? 1 : 0);
-                psUpd.setInt(5, id);
+                psUpd.setInt(5, p.isZonaRural() ? 1 : 0);
+                psUpd.setInt(6, id);
                 psUpd.executeUpdate();
                 return id;
             } else {
                 PreparedStatement psIns = con.prepareStatement(
-                        "INSERT INTO Propietarios (cedula, nombre, direccion, tiene_ninos, hay_embarazadas) VALUES (?, ?, ?, ?, ?)");
+                        "INSERT INTO Propietarios (cedula, nombre, direccion, tiene_ninos, hay_embarazadas, zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
                 psIns.setString(1, p.getCedula());
                 psIns.setString(2, p.getNombre());
                 psIns.setString(3, p.getDireccion());
                 psIns.setInt(4, p.isTieneNinos() ? 1 : 0);
                 psIns.setInt(5, p.isHayEmbarazadas() ? 1 : 0);
+                psIns.setInt(6, p.isZonaRural() ? 1 : 0);
                 psIns.executeUpdate();
                 ResultSet keys = con.createStatement().executeQuery("SELECT last_insert_rowid()");
                 if (keys.next()) return keys.getInt(1);
@@ -191,7 +220,8 @@ public class ConexionDB {
                         rs.getString("nombre"),
                         rs.getString("direccion"),
                         rs.getInt("tiene_ninos") == 1,
-                        rs.getInt("hay_embarazadas") == 1
+                        rs.getInt("hay_embarazadas") == 1,
+                        rs.getInt("zona_rural") == 1
                 );
             }
         } catch (SQLException ignore) {}
