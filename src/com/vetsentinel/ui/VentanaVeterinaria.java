@@ -23,6 +23,8 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private JTextField       txtEdadMascota;
     private JComboBox<String> cbEspecie;
     private JComboBox<Parasito> cbParasito;
+    private JComboBox<Parasito> cbSubParasito;
+    private JPanel           rowSubtipo;
     private JTextField       txtCedula;
     private JTextField       txtNombrePropietario;
     private JTextField       txtDireccion;
@@ -271,8 +273,34 @@ public class VentanaVeterinaria extends VetBaseFrame {
         formContent.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
         formContent.add(Box.createVerticalStrut(3));
         java.util.List<Parasito> parasitosDB = parasitoRepository.obtenerTodos();
+        java.util.List<Parasito> principales = new java.util.ArrayList<>();
+        java.util.List<Parasito> subLeishmania = new java.util.ArrayList<>();
+        Parasito parentLeishmania = null;
+
+        for (Parasito p : parasitosDB) {
+            String nombre = p.getNombre().toLowerCase();
+            if (nombre.contains("cutánea") || nombre.contains("cutanea") ||
+                nombre.contains("mucosa") ||
+                nombre.contains("visceral")) {
+                subLeishmania.add(p);
+            } else if (nombre.equals("leishmaniasis")) {
+                parentLeishmania = p;
+            } else {
+                principales.add(p);
+            }
+        }
+        if (parentLeishmania != null) {
+            principales.add(0, parentLeishmania);
+        }
+
         formContent.add(fieldRow("Parásito diagnosticado",
-                cbParasito = createCombo(parasitosDB.toArray(new Parasito[0]))));
+                cbParasito = createCombo(principales.toArray(new Parasito[0]))));
+        formContent.add(Box.createVerticalStrut(3));
+        
+        rowSubtipo = fieldRow("Tipo de Leishmaniasis",
+                cbSubParasito = createCombo(subLeishmania.toArray(new Parasito[0])));
+        rowSubtipo.setVisible(parentLeishmania != null && cbParasito.getSelectedItem() == parentLeishmania);
+        formContent.add(rowSubtipo);
 
         formContent.add(Box.createVerticalStrut(10));
         formContent.add(sectionLabel("DATOS DEL PROPIETARIO"));
@@ -500,6 +528,21 @@ public class VentanaVeterinaria extends VetBaseFrame {
         btnGuardar.addActionListener(e -> guardarYMostrarAlerta());
         btnVerHistorial.addActionListener(e -> verHistorial());
         btnEstadisticas.addActionListener(e -> verEstadisticas());
+
+        cbParasito.addActionListener(e -> {
+            Object selected = cbParasito.getSelectedItem();
+            if (selected instanceof Parasito) {
+                Parasito p = (Parasito) selected;
+                boolean isLeishmania = p.getNombre().equalsIgnoreCase("Leishmaniasis");
+                rowSubtipo.setVisible(isLeishmania);
+            } else {
+                rowSubtipo.setVisible(false);
+            }
+            if (rowSubtipo.getParent() != null) {
+                rowSubtipo.getParent().revalidate();
+                rowSubtipo.getParent().repaint();
+            }
+        });
     }
 
     private void verEstadisticas() {
@@ -568,7 +611,10 @@ public class VentanaVeterinaria extends VetBaseFrame {
         try { edad = Integer.parseInt(txtEdadMascota.getText().trim()); }
         catch (NumberFormatException ignored) {}
         Parasito selectedParasito = (Parasito) cbParasito.getSelectedItem();
-        String nombreParasito = selectedParasito.getNombre();
+        if (selectedParasito != null && selectedParasito.getNombre().equalsIgnoreCase("Leishmaniasis")) {
+            selectedParasito = (Parasito) cbSubParasito.getSelectedItem();
+        }
+        String nombreParasito = selectedParasito != null ? selectedParasito.getNombre() : "No especificado";
         String cedula           = txtCedula.getText().trim();
         String nombrePropietario = txtNombrePropietario.getText().trim();
         String direccion        = txtDireccion.getText().trim();
