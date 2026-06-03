@@ -87,6 +87,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
                          "FROM Diagnosticos d " +
                          "JOIN Mascotas m ON d.id_mascota = m.id " +
                          "JOIN Propietarios p ON m.id_propietario = p.id " +
+                         "JOIN Parasitos par ON d.id_parasito = par.id " +
                          "GROUP BY p.departamento";
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {

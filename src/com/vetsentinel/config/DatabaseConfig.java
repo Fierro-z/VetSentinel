@@ -130,6 +130,9 @@ public class DatabaseConfig {
                 }
             }
 
+            // Limpieza de diagnósticos huérfanos (cuyo parásito fue eliminado)
+            stmt.execute("DELETE FROM Diagnosticos WHERE id_parasito NOT IN (SELECT id FROM Parasitos)");
+
             // Semilla de usuarios por defecto
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
             int userCount = rsUsr.next() ? rsUsr.getInt(1) : 0;
