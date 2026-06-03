@@ -58,7 +58,7 @@ public class VentanaSelector extends VetBaseFrame {
             private Image banner;
             {
                 try {
-                    ImageIcon icon = new ImageIcon("img/bannerProyecto.png");
+                    ImageIcon icon = new ImageIcon("resources/img/bannerProyecto.png");
                     banner = icon.getImage();
                 } catch (Exception e) { System.out.println("Imagen no encontrada."); }
             }

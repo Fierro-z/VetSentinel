@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VetSentinel - Mapa Epidemiológico</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #111827; /* Dark background matching Swing bgDark */
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #111827;
+        }
+        /* Custom styled tooltip for a sleek dark mode appearance */
+        .custom-tooltip {
+            background-color: rgba(31, 41, 55, 0.95) !important;
+            color: #f3f4f6 !important;
+            border: 1px solid #374151 !important;
+            border-radius: 8px !important;
+            padding: 8px 12px !important;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+            font-size: 12px !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        }
+        .tooltip-title {
+            font-weight: bold;
+            color: #14b8a6; /* accentTeal */
+            margin-bottom: 4px;
+        }
+        .tooltip-status {
+            font-weight: 600;
+        }
+        .status-emergencia { color: #ef4444; }
+        .status-critico { color: #ef4444; }
+        .status-alto { color: #f97316; }
+        .status-medio { color: #eab308; }
+        .status-bajo { color: #10b981; }
+        .status-sindatos { color: #9ca3af; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Colombia
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false,
+            dragging: true,
+            scrollWheelZoom: true,
+            doubleClickZoom: false,
+            boxZoom: false
+        }).setView([4.570868, -74.297333], 6);
+
+        let geojsonLayer;
+        // Key: Normalized department name, Value: alert string (NORMAL, BAJO, MEDIO, ALTO, CRITICO, EMERGENCIA CRÍTICA)
+        let alertData = {};
+
+        // Helper to normalize strings (strips accents and casing differences)
+        function normalizeName(str) {
+            if (!str) return "";
+            return str.toString().toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/distrito capital de /gi, "")
+                .replace(/departamento de /gi, "")
+                .trim();
+        }
+
+        // Returns styling for each department based on the current alert level
+        function getStyle(feature) {
+            const deptoName = feature.properties.name || feature.properties.NOMBRE_DPT;
+            const normName = normalizeName(deptoName);
+            const alerta = alertData[normName] || 'SIN DATOS';
+
+            let fillColor = '#374151'; // Default: Dark grey (SIN DATOS)
+            let fillOpacity = 0.55;
+
+            if (alerta === 'EMERGENCIA CRÍTICA' || alerta === 'EMERGENCIA CRITICA' || alerta === 'CRITICO' || alerta === 'CRÍTICO') {
+                fillColor = '#ef4444'; // Red
+                fillOpacity = 0.75;
+            } else if (alerta === 'ALTO') {
+                fillColor = '#f97316'; // Orange
+                fillOpacity = 0.70;
+            } else if (alerta === 'MEDIO' || alerta === 'MODERADO') {
+                fillColor = '#eab308'; // Yellow
+                fillOpacity = 0.65;
+            } else if (alerta === 'BAJO') {
+                fillColor = '#10b981'; // Emerald Green
+                fillOpacity = 0.60;
+            }
+
+            return {
+                fillColor: fillColor,
+                weight: 1.5,
+                opacity: 0.8,
+                color: '#4b5563', // Border color
+                fillOpacity: fillOpacity
+            };
+        }
+
+        // Load the GeoJSON file using local fetch
+        fetch('co.json')
+            .then(response => {
+                if (!response.ok) throw new Error("No se pudo cargar co.json");
+                return response.json();
+            })
+            .then(data => {
+                geojsonLayer = L.geoJSON(data, {
+                    style: getStyle,
+                    onEachFeature: function(feature, layer) {
+                        const deptoName = feature.properties.name || feature.properties.NOMBRE_DPT;
+                        
+                        // Hover styling effects
+                        layer.on('mouseover', function(e) {
+                            layer.setStyle({
+                                weight: 2.5,
+                                color: '#14b8a6', // Accent teal highlight border
+                                fillOpacity: Math.min(getStyle(feature).fillOpacity + 0.15, 0.95)
+                            });
+                            
+                            const normName = normalizeName(deptoName);
+                            const alerta = alertData[normName] || 'SIN DATOS';
+                            
+                            let classSuffix = 'sindatos';
+                            if (alerta.includes('EMERGENCIA') || alerta.includes('CRITIC')) classSuffix = 'critico';
+                            else if (alerta === 'ALTO') classSuffix = 'alto';
+                            else if (alerta === 'MEDIO' || alerta === 'MODERADO') classSuffix = 'medio';
+                            else if (alerta === 'BAJO') classSuffix = 'bajo';
+
+                            layer.bindTooltip(
+                                `<div class="tooltip-title">${deptoName}</div>` +
+                                `Estado: <span class="tooltip-status status-${classSuffix}">${alerta}</span>`, 
+                                {
+                                    className: 'custom-tooltip',
+                                    sticky: true,
+                                    direction: 'auto',
+                                    opacity: 0.95
+                                }
+                            ).openTooltip();
+                        });
+
+                        layer.on('mouseout', function(e) {
+                            geojsonLayer.resetStyle(layer);
+                        });
+                    }
+                }).addTo(map);
+                
+                // Let Java know that the map is ready if a callback exists
+                console.log("MAP_READY");
+            })
+            .catch(error => {
+                console.error("Error al inicializar el mapa:", error);
+            });
+
+        // Bridge function called from Java to update the state of a single department
+        function updateDepartmentAlert(deptoName, alertLevel) {
+            const normName = normalizeName(deptoName);
+            alertData[normName] = alertLevel;
+            
+            // Reapply style to matching features
+            if (geojsonLayer) {
+                geojsonLayer.eachLayer(function(layer) {
+                    const featureName = layer.feature.properties.name || layer.feature.properties.NOMBRE_DPT;
+                    if (normalizeName(featureName) === normName) {
+                        geojsonLayer.resetStyle(layer);
+                    }
+                });
+            }
+        }
+
+        // Bridge function called from Java to load all department alerts at once
+        function setAllAlerts(alertsJsonString) {
+            try {
+                const alerts = JSON.parse(alertsJsonString);
+                for (let depto in alerts) {
+                    alertData[normalizeName(depto)] = alerts[depto];
+                }
+                
+                // Repaint all layers
+                if (geojsonLayer) {
+                    geojsonLayer.eachLayer(layer => {
+                        geojsonLayer.resetStyle(layer);
+                    });
+                }
+            } catch (e) {
+                console.error("Error parsing alerts JSON in setAllAlerts:", e);
+            }
+        }
+    </script>
+</body>
+</html>
