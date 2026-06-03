@@ -27,7 +27,7 @@ public class SQLiteUsuarioRepository implements UsuarioRepository {
                 return com.vetsentinel.util.PasswordHasher.verify(password, storedHash);
             }
         } catch (SQLException e) {
-            System.err.println("Error al validar usuario: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error al validar usuario", e);
         }
         return false;
     }

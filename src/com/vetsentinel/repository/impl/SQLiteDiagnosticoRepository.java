@@ -65,7 +65,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
             }
             return rows.toArray(new Object[0][]);
         } catch (SQLException e) {
-            System.err.println("Error en obtenerHistorial: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error en obtenerHistorial", e);
             return new Object[0][];
         }
     }
@@ -101,7 +101,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
                 mapa.put(dep, riesgoStr);
             }
         } catch (SQLException e) {
-            System.err.println("Error en obtenerRiesgoPorDepartamento: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error en obtenerRiesgoPorDepartamento", e);
         }
         return mapa;
     }
@@ -127,7 +127,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
                 });
             }
         } catch (SQLException e) {
-            System.err.println("Error en obtenerCepasPorUbicacion: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error en obtenerCepasPorUbicacion", e);
         }
         return lista;
     }
@@ -197,7 +197,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error en obtenerHistorialPorDepartamento: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error en obtenerHistorialPorDepartamento", e);
             return new Object[0][];
         }
     }

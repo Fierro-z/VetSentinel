@@ -36,7 +36,7 @@ public class SQLiteParasitoRepository implements ParasitoRepository {
                 ));
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener parásitos: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error al obtener parásitos", e);
         }
         return lista;
     }

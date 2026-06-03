@@ -69,7 +69,7 @@ public class DatabaseConfig {
             try {
                 con.rollback();
             } catch (SQLException e) {
-                System.err.println("Error al hacer rollback: " + e.getMessage());
+                com.vetsentinel.util.VetLogger.error("Error al hacer rollback", e);
             } finally {
                 try { con.setAutoCommit(true); } catch (SQLException ignore) {}
                 try { con.close(); } catch (SQLException ignore) {}
@@ -224,7 +224,7 @@ public class DatabaseConfig {
             }
 
         } catch (SQLException e) {
-            System.err.println("Error al inicializar la base de datos: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error al inicializar la base de datos", e);
         }
     }
 }

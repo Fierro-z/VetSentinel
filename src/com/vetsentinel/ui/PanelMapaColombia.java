@@ -235,7 +235,7 @@ public class PanelMapaColombia extends JPanel {
                 pos++;
             }
         } catch (IOException e) {
-            System.err.println("Error al cargar co.json: " + e.getMessage());
+            com.vetsentinel.util.VetLogger.error("Error al cargar co.json", e);
         }
     }
 
