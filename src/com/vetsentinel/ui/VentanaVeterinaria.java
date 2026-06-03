@@ -592,14 +592,9 @@ public class VentanaVeterinaria extends VetBaseFrame {
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");
 
-        String alerta = riskAssessmentService.evaluarRiesgoHumano(diagnostico);
-        
-        String nivelBD = "BAJO";
-        if (alerta.contains("NIVEL: EMERGENCIA CRÍTICA") || alerta.contains("EMERGENCIA CRITICA")) nivelBD = "EMERGENCIA CRÍTICA";
-        else if (alerta.contains("NIVEL: CRITICO") || alerta.contains("NIVEL: CRÍTICO")) nivelBD = "CRITICO";
-        else if (alerta.contains("NIVEL: ALTO")) nivelBD = "ALTO";
-        else if (alerta.contains("NIVEL: MEDIO")) nivelBD = "MEDIO";
-        else if (alerta.contains("NIVEL: MODERADO")) nivelBD = "MODERADO";
+        com.vetsentinel.model.RiskAssessmentResult result = riskAssessmentService.evaluarRiesgoHumano(diagnostico);
+        String alerta = result.getAlertaTexto();
+        String nivelBD = result.getNivel().getDbValue();
 
         mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
         

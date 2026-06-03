@@ -4,6 +4,9 @@ import com.vetsentinel.model.Diagnostico;
 import com.vetsentinel.model.Mascota;
 import com.vetsentinel.model.Parasito;
 import com.vetsentinel.model.Propietario;
+import com.vetsentinel.model.RiskLevel;
+import com.vetsentinel.model.RiskResult;
+import com.vetsentinel.model.RiskAssessmentResult;
 
 import java.util.List;
 
@@ -15,7 +18,7 @@ public class RiskAssessmentService {
         this.strategies = strategies;
     }
 
-    public String evaluarRiesgoHumano(Diagnostico diagnostico) {
+    public RiskAssessmentResult evaluarRiesgoHumano(Diagnostico diagnostico) {
         Mascota mascota = diagnostico.getMascota();
         Propietario dueno = mascota.getPropietario();
         Parasito parasito = diagnostico.getParasito();
@@ -28,7 +31,7 @@ public class RiskAssessmentService {
         alerta.append("Dirección: ").append(dueno.getDireccion()).append("\n");
         alerta.append("Parásito detectado: ").append(parasito.getNombre()).append("\n\n");
 
-        String result = null;
+        RiskResult result = null;
         for (RiskStrategy strategy : strategies) {
             if (strategy.canHandle(diagnostico)) {
                 result = strategy.evaluate(diagnostico);
@@ -38,13 +41,16 @@ public class RiskAssessmentService {
             }
         }
 
+        RiskLevel nivelFinal = RiskLevel.MEDIO;
         if (result != null) {
-            alerta.append(result);
+            nivelFinal = result.getNivel();
+            alerta.append("NIVEL: ").append(nivelFinal.getDbValue()).append("\n")
+                  .append(result.getDetalle());
         } else {
             alerta.append("NIVEL: MEDIO\nConvivencia normal. Mantenga las medidas preventivas generales.\n\n");
         }
 
         alerta.append("ACCIONES RECOMENDADAS:\n").append(parasito.getMedidasPreventivas());
-        return alerta.toString();
+        return new RiskAssessmentResult(nivelFinal, alerta.toString());
     }
 }
