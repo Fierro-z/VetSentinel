@@ -15,7 +15,20 @@ public class RiesgoService {
         boolean esLeishmaniasis = p.toLowerCase().contains("leishmania");
 
         if (esLeishmaniasis) {
-            if (dueno.isTieneNinos() && dueno.isZonaRural()) {
+            boolean esVisceral = p.toLowerCase().contains("visceral");
+            boolean esCutanea = p.toLowerCase().contains("cutánea") || p.toLowerCase().contains("cutanea");
+
+            if (esVisceral && (dueno.getEstrato() == 1 || dueno.getRegimen().equalsIgnoreCase("Subsidiado"))) {
+                alerta += "NIVEL: EMERGENCIA CRÍTICA\n";
+                alerta += "Alerta de Emergencia: Paciente vulnerable (Estrato 1 / Régimen Subsidiado) expuesto a Leishmaniasis Visceral. La letalidad de esta cepa supera el 95% sin tratamiento. Antecedentes del INS reportan casos graves en niños de 5 años y lactantes de 6 meses en Sucre.\n\n";
+            } else if (esCutanea && dueno.isTieneNinos() && 
+                       (dueno.getDepartamento().equalsIgnoreCase("Risaralda") || 
+                        dueno.getDepartamento().equalsIgnoreCase("Atlántico") || 
+                        dueno.getDepartamento().equalsIgnoreCase("Atlantico") || 
+                        dueno.getDepartamento().equalsIgnoreCase("Caldas"))) {
+                alerta += "NIVEL: CRITICO\n";
+                alerta += "Riesgo Crítico: Menores de edad expuestos en departamento de alta prevalencia domiciliaria (" + dueno.getDepartamento() + "). La presencia de niños menores de 10 años infectados es indicador clave de transmisión intra o peridomiciliaria.\n\n";
+            } else if (dueno.isTieneNinos() && dueno.isZonaRural()) {
                 alerta += "NIVEL: CRITICO\n";
                 alerta += "Riesgo inminente: Presencia de niños en zona rural (factor de riesgo del 82.7%). Transmisión peridomiciliaria (Lutzomyia sp.) muy probable.\n\n";
             } else if (dueno.isTieneNinos()) {
@@ -32,9 +45,9 @@ public class RiesgoService {
             boolean esToxoplasma = p.toLowerCase().contains("toxoplasma");
             boolean esGato = mascota.getEspecie().equalsIgnoreCase("Gato");
             
-            if (esToxoplasma && dueno.getNumeroDeEmbarazosPrevios() > 1) {
+            if (esToxoplasma && dueno.getNumeroDeEmbarazosPrevios() >= 2) {
                 alerta += "NIVEL: CRITICO (ALTA EXPOSICIÓN EPIDEMIOLÓGICA)\n";
-                alerta += "Riesgo crítico: Gestante multípara. Por datos epidemiológicos, las mujeres con embarazos previos tienen mayor probabilidad de exposición acumulada al parásito en su entorno.\n";
+                alerta += "Riesgo crítico: Gestante multípara (>= 2 embarazos previos). El estudio de seroprevalencia en Huila reporta un 56.7% de prevalencia en gestantes multíparas, reflejando mayor exposición acumulada al parásito.\n";
                 if (esGato) alerta += "¡ALERTA FELINA CRÍTICA! Transmisión directa por ooquistes en heces de gatos.\n\n";
                 else alerta += "\n";
             } else if (esToxoplasma) {

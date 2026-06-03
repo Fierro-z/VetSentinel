@@ -8,9 +8,12 @@ public class Propietario {
     private boolean hayEmbarazadas;
     private int numeroDeEmbarazosPrevios;
     private boolean zonaRural;
+    private int estrato;
+    private String regimen;
+    private int altitud;
 
     public Propietario(int id, String cedula, String nombre, String direccion, String departamento, boolean tieneNinos,
-            boolean hayEmbarazadas, int numeroDeEmbarazosPrevios, boolean zonaRural) {
+            boolean hayEmbarazadas, int numeroDeEmbarazosPrevios, boolean zonaRural, int estrato, String regimen, int altitud) {
         this.id = id;
         this.cedula = cedula;
         this.nombre = nombre;
@@ -20,6 +23,9 @@ public class Propietario {
         this.hayEmbarazadas = hayEmbarazadas;
         this.numeroDeEmbarazosPrevios = numeroDeEmbarazosPrevios;
         this.zonaRural = zonaRural;
+        this.estrato = estrato;
+        this.regimen = regimen;
+        this.altitud = altitud;
     }
 
     public int getId() {
@@ -60,5 +66,29 @@ public class Propietario {
 
     public boolean isZonaRural() {
         return zonaRural;
+    }
+
+    public int getEstrato() {
+        return estrato;
+    }
+
+    public void setEstrato(int estrato) {
+        this.estrato = estrato;
+    }
+
+    public String getRegimen() {
+        return regimen;
+    }
+
+    public void setRegimen(String regimen) {
+        this.regimen = regimen;
+    }
+
+    public int getAltitud() {
+        return altitud;
+    }
+
+    public void setAltitud(int altitud) {
+        this.altitud = altitud;
     }
 }

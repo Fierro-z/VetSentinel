@@ -96,7 +96,7 @@ public class VeterinariaDAO {
             if (rs.next()) {
                 int id = rs.getInt(1);
                 PreparedStatement psUpd = con.prepareStatement(
-                        "UPDATE Propietarios SET nombre = ?, direccion = ?, departamento = ?, tiene_ninos = ?, hay_embarazadas = ?, numero_embarazos_previos = ?, zona_rural = ? WHERE id = ?");
+                        "UPDATE Propietarios SET nombre = ?, direccion = ?, departamento = ?, tiene_ninos = ?, hay_embarazadas = ?, numero_embarazos_previos = ?, zona_rural = ?, estrato = ?, regimen = ?, altitud = ? WHERE id = ?");
                 psUpd.setString(1, p.getNombre());
                 psUpd.setString(2, p.getDireccion());
                 psUpd.setString(3, p.getDepartamento());
@@ -104,12 +104,15 @@ public class VeterinariaDAO {
                 psUpd.setInt(5, p.isHayEmbarazadas() ? 1 : 0);
                 psUpd.setInt(6, p.getNumeroDeEmbarazosPrevios());
                 psUpd.setInt(7, p.isZonaRural() ? 1 : 0);
-                psUpd.setInt(8, id);
+                psUpd.setInt(8, p.getEstrato());
+                psUpd.setString(9, p.getRegimen());
+                psUpd.setInt(10, p.getAltitud());
+                psUpd.setInt(11, id);
                 psUpd.executeUpdate();
                 return id;
             } else {
                 PreparedStatement psIns = con.prepareStatement(
-                        "INSERT INTO Propietarios (cedula, nombre, direccion, departamento, tiene_ninos, hay_embarazadas, numero_embarazos_previos, zona_rural) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                        "INSERT INTO Propietarios (cedula, nombre, direccion, departamento, tiene_ninos, hay_embarazadas, numero_embarazos_previos, zona_rural, estrato, regimen, altitud) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 psIns.setString(1, p.getCedula());
                 psIns.setString(2, p.getNombre());
                 psIns.setString(3, p.getDireccion());
@@ -118,6 +121,9 @@ public class VeterinariaDAO {
                 psIns.setInt(6, p.isHayEmbarazadas() ? 1 : 0);
                 psIns.setInt(7, p.getNumeroDeEmbarazosPrevios());
                 psIns.setInt(8, p.isZonaRural() ? 1 : 0);
+                psIns.setInt(9, p.getEstrato());
+                psIns.setString(10, p.getRegimen());
+                psIns.setInt(11, p.getAltitud());
                 psIns.executeUpdate();
                 ResultSet keys = con.createStatement().executeQuery("SELECT last_insert_rowid()");
                 if (keys.next()) return keys.getInt(1);
@@ -141,7 +147,10 @@ public class VeterinariaDAO {
                         rs.getInt("tiene_ninos") == 1,
                         rs.getInt("hay_embarazadas") == 1,
                         rs.getInt("numero_embarazos_previos"),
-                        rs.getInt("zona_rural") == 1
+                        rs.getInt("zona_rural") == 1,
+                        rs.getInt("estrato"),
+                        rs.getString("regimen"),
+                        rs.getInt("altitud")
                 );
             }
         } catch (SQLException ignore) {}
@@ -195,7 +204,10 @@ public class VeterinariaDAO {
         try (Connection con = ConexionDB.getConexion(); Statement stmt = con.createStatement()) {
             String sql = "SELECT p.departamento, " +
                          "MAX(CASE d.nivel_riesgo " +
+                         "WHEN 'EMERGENCIA CRÍTICA' THEN 5 " +
+                         "WHEN 'EMERGENCIA CRITICA' THEN 5 " +
                          "WHEN 'CRITICO' THEN 4 " +
+                         "WHEN 'CRÍTICO' THEN 4 " +
                          "WHEN 'ALTO' THEN 3 " +
                          "WHEN 'MEDIO' THEN 2 " +
                          "WHEN 'MODERADO' THEN 2 " +
@@ -209,7 +221,8 @@ public class VeterinariaDAO {
                 String dep = rs.getString("departamento");
                 int maxRisk = rs.getInt("max_risk");
                 String riesgoStr = "BAJO";
-                if (maxRisk == 4) riesgoStr = "CRITICO";
+                if (maxRisk == 5) riesgoStr = "EMERGENCIA CRÍTICA";
+                else if (maxRisk == 4) riesgoStr = "CRITICO";
                 else if (maxRisk == 3) riesgoStr = "ALTO";
                 else if (maxRisk == 2) riesgoStr = "MEDIO";
                 mapa.put(dep, riesgoStr);

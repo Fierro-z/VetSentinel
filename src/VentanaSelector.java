@@ -20,7 +20,7 @@ public class VentanaSelector extends VetBaseFrame {
         root.add(buildCenter(), BorderLayout.CENTER);
 
         setContentPane(root);
-        setSize(750, 520);
+        setSize(960, 520);
         setResizable(false);
         setLocationRelativeTo(null);
     }
@@ -94,16 +94,20 @@ public class VentanaSelector extends VetBaseFrame {
         center.setOpaque(false);
         updaters.add(center::repaint);
 
-        JPanel container = new JPanel(new GridLayout(1, 2, 30, 0));
+        JPanel container = new JPanel(new GridLayout(1, 3, 20, 0));
         container.setOpaque(false);
         
         JButton btnClinica = createModuleButton("🏥", "Módulo Clínico", "Registro de diagnósticos", () -> accentBlue);
         btnClinica.addActionListener(e -> { this.dispose(); new VentanaLogin("CLINICA").setVisible(true); });
 
+        JButton btnCiudadano = createModuleButton("🌍", "BioGeo Risk", "Prevención Ciudadana", () -> okGreen);
+        btnCiudadano.addActionListener(e -> { this.dispose(); new VentanaCiudadana().setVisible(true); });
+
         JButton btnEstado = createModuleButton("📊", "Módulo Estado", "Vigilancia Epidemiológica", () -> accentTeal);
         btnEstado.addActionListener(e -> { this.dispose(); new VentanaLogin("ESTADO").setVisible(true); });
 
         container.add(btnClinica);
+        container.add(btnCiudadano);
         container.add(btnEstado);
 
         GridBagConstraints gbc = new GridBagConstraints();

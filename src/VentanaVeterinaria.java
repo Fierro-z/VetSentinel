@@ -22,6 +22,9 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private JTextField       txtNombrePropietario;
     private JTextField       txtDireccion;
     private JComboBox<String> cbDepartamento;
+    private JComboBox<String> cbEstrato;
+    private JComboBox<String> cbRegimen;
+    private JTextField       txtAltitud;
     private JCheckBox        chkEmbarazadas;
     private JCheckBox        chkNinos;
     private JCheckBox        chkZonaRural;
@@ -279,6 +282,19 @@ public class VentanaVeterinaria extends VetBaseFrame {
         formContent.add(Box.createVerticalStrut(3));
         formContent.add(fieldRow("Departamento", cbDepartamento = createCombo(DEPARTAMENTOS)));
         formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Estrato Socioeconómico", cbEstrato = createCombo(new String[]{"1", "2", "3", "4", "5", "6"})));
+        formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Régimen de Salud", cbRegimen = createCombo(new String[]{"Contributivo", "Subsidiado", "Especial", "Otros"})));
+        formContent.add(Box.createVerticalStrut(3));
+        formContent.add(fieldRow("Altitud del Hogar (msnm)", txtAltitud = createTextField("Ej: 1540")));
+        txtAltitud.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                if (!Character.isDigit(e.getKeyChar()) && e.getKeyChar() != java.awt.event.KeyEvent.VK_BACK_SPACE) {
+                    e.consume();
+                }
+            }
+        });
+        formContent.add(Box.createVerticalStrut(3));
         JPanel rowEmbarazos = fieldRow("Número de embarazos previos (paridad)", txtNumeroEmbarazos = createTextField("Ej: 0, 1, 2..."));
         rowEmbarazos.setVisible(false);
         formContent.add(rowEmbarazos);
@@ -510,6 +526,9 @@ public class VentanaVeterinaria extends VetBaseFrame {
             txtDireccion.setText(p.getDireccion());
             if (p.getDepartamento() != null) cbDepartamento.setSelectedItem(p.getDepartamento());
             txtNumeroEmbarazos.setText(String.valueOf(p.getNumeroDeEmbarazosPrevios()));
+            cbEstrato.setSelectedItem(String.valueOf(p.getEstrato()));
+            cbRegimen.setSelectedItem(p.getRegimen());
+            txtAltitud.setText(String.valueOf(p.getAltitud()));
             chkNinos.setSelected(p.isTieneNinos());
             chkEmbarazadas.setSelected(p.isHayEmbarazadas());
             chkZonaRural.setSelected(p.isZonaRural());
@@ -562,8 +581,15 @@ public class VentanaVeterinaria extends VetBaseFrame {
         int numeroEmbarazos = 0;
         try { numeroEmbarazos = Integer.parseInt(txtNumeroEmbarazos.getText().trim()); }
         catch (NumberFormatException ignored) {}
+        int estrato = 1;
+        try { estrato = Integer.parseInt(cbEstrato.getSelectedItem().toString()); }
+        catch (NumberFormatException ignored) {}
+        String regimen = cbRegimen.getSelectedItem().toString();
+        int altitud = 0;
+        try { altitud = Integer.parseInt(txtAltitud.getText().trim()); }
+        catch (NumberFormatException ignored) {}
 
-        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, departamento, ninos, embarazada, numeroEmbarazos, zonaRural);
+        Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, departamento, ninos, embarazada, numeroEmbarazos, zonaRural, estrato, regimen, altitud);
         Mascota     mascota     = new Mascota(0, nombreMascota, especie, edad, propietario);
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");
@@ -571,7 +597,8 @@ public class VentanaVeterinaria extends VetBaseFrame {
         String alerta = RiesgoService.evaluarRiesgoHumano(diagnostico);
         
         String nivelBD = "BAJO";
-        if (alerta.contains("NIVEL: CRITICO")) nivelBD = "CRITICO";
+        if (alerta.contains("NIVEL: EMERGENCIA CRÍTICA") || alerta.contains("EMERGENCIA CRITICA")) nivelBD = "EMERGENCIA CRÍTICA";
+        else if (alerta.contains("NIVEL: CRITICO") || alerta.contains("NIVEL: CRÍTICO")) nivelBD = "CRITICO";
         else if (alerta.contains("NIVEL: ALTO")) nivelBD = "ALTO";
         else if (alerta.contains("NIVEL: MEDIO")) nivelBD = "MEDIO";
         else if (alerta.contains("NIVEL: MODERADO")) nivelBD = "MODERADO";
@@ -597,7 +624,9 @@ public class VentanaVeterinaria extends VetBaseFrame {
         Color  nivelColor;
         String icon;
 
-        if (alerta.contains("NIVEL: CRITICO")) {
+        if (alerta.contains("EMERGENCIA CRÍTICA") || alerta.contains("EMERGENCIA CRITICA")) {
+            nivel = "🚨  EMERGENCIA CRÍTICA";  nivelColor = dangerRed;    icon = "🚨";
+        } else if (alerta.contains("NIVEL: CRITICO") || alerta.contains("NIVEL: CRÍTICO")) {
             nivel = "⚠  NIVEL CRÍTICO";  nivelColor = dangerRed;    icon = "🚨";
         } else if (alerta.contains("NIVEL: ALTO") || alerta.contains("NIVEL: MEDIO")) {
             nivel = "▲  ATENCIÓN";     nivelColor = warnOrange;   icon = "⚠️";
@@ -631,7 +660,8 @@ public class VentanaVeterinaria extends VetBaseFrame {
                     
                     if (col == 1) { // RIESGO column
                         String v = getValueAt(row, col).toString();
-                        if ("CRITICO".equals(v)) c.setForeground(dangerRed);
+                        if ("EMERGENCIA CRÍTICA".equals(v) || "EMERGENCIA CRITICA".equals(v)) c.setForeground(dangerRed);
+                        else if ("CRITICO".equals(v) || "CRÍTICO".equals(v)) c.setForeground(dangerRed);
                         else if ("ALTO".equals(v) || "MODERADO".equals(v)) c.setForeground(warnOrange);
                         else if ("MEDIO".equals(v)) c.setForeground(new Color(230, 180, 50));
                         else if ("BAJO".equals(v)) c.setForeground(okGreen);

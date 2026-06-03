@@ -29,7 +29,8 @@ public class ConexionDB {
                     "riesgo_principal TEXT," +
                     "medidas_preventivas TEXT," +
                     "alerta_embarazo INTEGER DEFAULT 0," +
-                    "alerta_ninos INTEGER DEFAULT 0)");
+                    "alerta_ninos INTEGER DEFAULT 0," +
+                    "alerta_zona_rural INTEGER DEFAULT 0)");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS Propietarios (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -40,7 +41,10 @@ public class ConexionDB {
                     "tiene_ninos INTEGER DEFAULT 0," +
                     "hay_embarazadas INTEGER DEFAULT 0," +
                     "numero_embarazos_previos INTEGER DEFAULT 0," +
-                    "zona_rural INTEGER DEFAULT 0)");
+                    "zona_rural INTEGER DEFAULT 0," +
+                    "estrato INTEGER DEFAULT 1," +
+                    "regimen TEXT DEFAULT 'Contributivo'," +
+                    "altitud INTEGER DEFAULT 0)");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS Mascotas (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -74,15 +78,20 @@ public class ConexionDB {
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN departamento TEXT DEFAULT 'No especificado'"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN zona_rural INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN numero_embarazos_previos INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
+            try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN estrato INTEGER DEFAULT 1"); } catch (SQLException ignore) {}
+            try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN regimen TEXT DEFAULT 'Contributivo'"); } catch (SQLException ignore) {}
+            try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN altitud INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
 
-            // Eliminar parásitos que no sean los 3 permitidos (Toxoplasmosis, Leishmaniasis, Toxocariasis)
+            // Eliminar parásitos antiguos que no correspondan
             stmt.execute("DELETE FROM Parasitos WHERE nombre NOT LIKE '%Toxoplasma%' AND nombre NOT LIKE '%Leishmania%' AND nombre NOT LIKE '%Toxocara%'");
 
-            // Datos de los 3 parásitos/enfermedades permitidos
+            // Datos de los parásitos permitidos (con diferenciación de cepas de Leishmaniasis)
             String[][] parasitosData = {
-                {"Toxoplasmosis", "Infección causada por el parásito Toxoplasma gondii. Se transmite por heces de gatos, carne mal cocida o alimentos/agua contaminados. Es muy común y peligrosa especialmente para mujeres embarazadas porque puede afectar al bebé.", "Evitar que la mujer embarazada manipule la caja de arena del gato y asegurar que la carne consumida en el hogar esté bien cocida.", "1", "0", "0"},
-                {"Leishmaniasis", "Enfermedad parasitaria transmitida por la picadura de un insecto. En Colombia es frecuente la forma cutánea, que produce lesiones en la piel y es común en zonas rurales y selváticas.", "Control de vectores y uso de toldillos, especialmente si la mascota duerme dentro o cerca de la casa. Fumigación peridomiciliar.", "0", "1", "1"},
-                {"Toxocariasis", "Infección causada por parásitos de perros y gatos. Las personas se contagian al ingerir huevos presentes en suelo contaminado, especialmente en parques. Es común en niños.", "Desparasitar mascota cada 3 meses. Evitar contacto de niños con suelo contaminado.", "0", "1", "0"}
+                {"Toxoplasmosis", "Infección causada por el parásito Toxoplasma gondii. Se transmite por heces de gatos, carne mal cocida o alimentos/agua contaminados. Riesgo crítico en gestantes.", "Evitar manipulación de arena de gato por gestantes y cocer bien las carnes.", "1", "0", "0"},
+                {"Leishmaniasis Cutánea", "Enfermedad parasitaria transmitida por Lutzomyia. Produce lesiones ulcerativas en la piel.", "Uso de repelentes, ropa de manga larga, toldillos y control de vectores.", "0", "1", "1"},
+                {"Leishmaniasis Mucosa", "Afectación de las mucosas nasofaríngeas, causando lesiones destructivas secundarias.", "Tratamiento oportuno de la fase cutánea y control entomológico.", "0", "1", "1"},
+                {"Leishmaniasis Visceral", "Enfermedad sistémica grave con afectación de bazo e hígado. Letalidad >95% sin tratamiento.", "Uso de toldillos, fumigación peridomiciliar y control de reservorios.", "0", "1", "1"},
+                {"Toxocariasis", "Infección causada por parásitos de perros y gatos. Común en niños por ingerir tierra con huevos.", "Desparasitar mascotas periódicamente y evitar contacto con suelos de parques sospechosos.", "0", "1", "0"}
             };
 
             for (String[] pData : parasitosData) {
@@ -93,9 +102,9 @@ public class ConexionDB {
                 int alertaNinos = Integer.parseInt(pData[4]);
                 int alertaZonaRural = Integer.parseInt(pData[5]);
 
-                // Buscar si ya existe
-                PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Parasitos WHERE nombre LIKE ?");
-                psCheck.setString(1, "%" + nombre.substring(0, 5) + "%");
+                // Buscar si ya existe por nombre exacto
+                PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Parasitos WHERE nombre = ?");
+                psCheck.setString(1, nombre);
                 ResultSet rsCheck = psCheck.executeQuery();
 
                 if (rsCheck.next()) {

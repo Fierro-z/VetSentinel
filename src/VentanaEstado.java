@@ -190,8 +190,9 @@ public class VentanaEstado extends VetBaseFrame {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 Color bg = bgInput;
-                if (risk.equals("CRITICO")) bg = new Color(dangerRed.getRed(), dangerRed.getGreen(), dangerRed.getBlue(), 60);
-                else if (risk.equals("ALTO")) bg = new Color(warnOrange.getRed(), warnOrange.getGreen(), warnOrange.getBlue(), 60);
+                if (risk.equals("EMERGENCIA CRÍTICA") || risk.equals("EMERGENCIA CRITICA") || risk.equals("CRITICO") || risk.equals("CRÍTICO")) {
+                    bg = new Color(dangerRed.getRed(), dangerRed.getGreen(), dangerRed.getBlue(), 60);
+                } else if (risk.equals("ALTO")) bg = new Color(warnOrange.getRed(), warnOrange.getGreen(), warnOrange.getBlue(), 60);
                 else if (risk.equals("MEDIO")) bg = new Color(230, 180, 50, 60);
                 else if (risk.equals("BAJO")) bg = new Color(okGreen.getRed(), okGreen.getGreen(), okGreen.getBlue(), 60);
                 
@@ -210,7 +211,7 @@ public class VentanaEstado extends VetBaseFrame {
         lblName.setHorizontalAlignment(SwingConstants.CENTER);
         
         JLabel lblRisk = makeLabel(risk, FONT_LABEL.deriveFont(Font.BOLD, 9f), () -> {
-            if (risk.equals("CRITICO")) return dangerRed;
+            if (risk.equals("EMERGENCIA CRÍTICA") || risk.equals("EMERGENCIA CRITICA") || risk.equals("CRITICO") || risk.equals("CRÍTICO")) return dangerRed;
             if (risk.equals("ALTO")) return warnOrange;
             if (risk.equals("BAJO")) return okGreen;
             if (risk.equals("SIN DATOS")) return textMuted;
