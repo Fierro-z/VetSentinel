@@ -1,3 +1,5 @@
+package com.vetsentinel.model;
+
 public class Parasito {
     private int id;
     private String nombre;

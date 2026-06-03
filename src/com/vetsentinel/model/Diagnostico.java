@@ -1,3 +1,5 @@
+package com.vetsentinel.model;
+
 public class Diagnostico {
     private int id;
     private Mascota mascota;
@@ -12,8 +14,6 @@ public class Diagnostico {
         this.fecha = fecha;
         this.estadoContagio = estadoContagio;
     }
-
-
 
     public int getId() { return id; }
     public Mascota getMascota() { return mascota; }

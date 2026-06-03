@@ -1,0 +1,32 @@
+package com.vetsentinel.repository.impl;
+
+import com.vetsentinel.config.DatabaseConfig;
+import com.vetsentinel.repository.UsuarioRepository;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class SQLiteUsuarioRepository implements UsuarioRepository {
+
+    private final DatabaseConfig dbConfig;
+
+    public SQLiteUsuarioRepository(DatabaseConfig dbConfig) {
+        this.dbConfig = dbConfig;
+    }
+
+    @Override
+    public boolean validarCredenciales(String username, String password) {
+        try (Connection con = dbConfig.getConnection()) {
+            PreparedStatement ps = con.prepareStatement("SELECT * FROM Usuarios WHERE username = ? AND password = ?");
+            ps.setString(1, username);
+            ps.setString(2, password);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            System.err.println("Error al validar usuario: " + e.getMessage());
+        }
+        return false;
+    }
+}

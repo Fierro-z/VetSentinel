@@ -1,3 +1,8 @@
+package com.vetsentinel.ui;
+
+import com.vetsentinel.repository.*;
+import com.vetsentinel.service.*;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -16,8 +21,27 @@ public class VentanaEstado extends VetBaseFrame {
     private JPanel panelMapa;
     private JPanel panelDatos;
 
-    public VentanaEstado() {
+    private final PropietarioRepository propietarioRepository;
+    private final MascotaRepository mascotaRepository;
+    private final ParasitoRepository parasitoRepository;
+    private final DiagnosticoRepository diagnosticoRepository;
+    private final AuthenticationService authenticationService;
+    private final RiskAssessmentService riskAssessmentService;
+
+    public VentanaEstado(PropietarioRepository propietarioRepository,
+                         MascotaRepository mascotaRepository,
+                         ParasitoRepository parasitoRepository,
+                         DiagnosticoRepository diagnosticoRepository,
+                         AuthenticationService authenticationService,
+                         RiskAssessmentService riskAssessmentService) {
         super("VetSentinel — Módulo de Salud Pública (Estado)");
+        this.propietarioRepository = propietarioRepository;
+        this.mascotaRepository = mascotaRepository;
+        this.parasitoRepository = parasitoRepository;
+        this.diagnosticoRepository = diagnosticoRepository;
+        this.authenticationService = authenticationService;
+        this.riskAssessmentService = riskAssessmentService;
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         root = new JPanel(new BorderLayout(0, 0));
@@ -47,7 +71,6 @@ public class VentanaEstado extends VetBaseFrame {
         titles.add(title);
         titles.add(subtitle);
 
-        // Panel izquierdo que agrupa el botón Volver y los títulos
         JPanel leftPanel = new JPanel(new BorderLayout(15, 0));
         leftPanel.setOpaque(false);
 
@@ -76,9 +99,11 @@ public class VentanaEstado extends VetBaseFrame {
         btnVolverTop.setBorderPainted(false);
         btnVolverTop.setFocusPainted(false);
         btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnVolverTop.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+        btnVolverTop.addActionListener(e -> { 
+            this.dispose(); 
+            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+        });
 
-        // Envolver el botón para evitar que se estire verticalmente
         JPanel btnWrapper = new JPanel(new GridBagLayout());
         btnWrapper.setOpaque(false);
         btnWrapper.add(btnVolverTop);
@@ -151,9 +176,8 @@ public class VentanaEstado extends VetBaseFrame {
 
     private void actualizarMapa() {
         panelMapa.removeAll();
-        Map<String, String> riesgos = VeterinariaDAO.obtenerRiesgoPorDepartamento();
+        Map<String, String> riesgos = diagnosticoRepository.obtenerRiesgoPorDepartamento();
 
-        // Matriz esquemática de la geografía de Colombia (32 departamentos)
         String[][] mapGrid = {
             {"San Andrés y Providencia", null, null, "La Guajira", null, null},
             {null, "Atlántico", "Magdalena", "Cesar", null, null},
@@ -242,7 +266,7 @@ public class VentanaEstado extends VetBaseFrame {
             panelDatos.remove(1);
         }
         
-        List<String[]> cepas = VeterinariaDAO.obtenerCepasPorUbicacion();
+        List<String[]> cepas = diagnosticoRepository.obtenerCepasPorUbicacion();
         String[] cols = {"Departamento", "Cepa / Parásito", "Casos", "Riesgo Max"};
         Object[][] data = cepas.toArray(new Object[0][]);
 

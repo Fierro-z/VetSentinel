@@ -1,3 +1,5 @@
+package com.vetsentinel.model;
+
 public class Mascota {
     private int id;
     private String nombre;
@@ -19,4 +21,8 @@ public class Mascota {
     public String getEspecie() { return especie; }
     public int getEdad() { return edad; }
     public Propietario getPropietario() { return propietario; }
+
+    public boolean esGato() {
+        return especie != null && especie.equalsIgnoreCase("Gato");
+    }
 }

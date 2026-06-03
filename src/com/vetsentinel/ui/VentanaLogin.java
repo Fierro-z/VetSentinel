@@ -1,26 +1,49 @@
+package com.vetsentinel.ui;
+
+import com.vetsentinel.repository.*;
+import com.vetsentinel.service.*;
+
 import javax.swing.*;
-import javax.swing.border.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.geom.*;
+import java.awt.geom.RoundRectangle2D;
 
 public class VentanaLogin extends VetBaseFrame {
 
-    // ── Tipografía ─────────────────────────────────────────────────────────────
     private static final Font FONT_TITLE   = new Font("SansSerif", Font.BOLD,  24);
     private static final Font FONT_LABEL   = new Font("SansSerif", Font.PLAIN, 13);
     private static final Font FONT_INPUT   = new Font("SansSerif", Font.PLAIN, 14);
 
-    // ── Componentes de UI ──────────────────────────────────────────────────────
     private JPanel root;
     private JTextField txtUsername;
     private JPasswordField txtPassword;
     private JButton btnLogin;
     private JButton btnThemeToggle;
-    private String modo;
+    private final String modo;
 
-    public VentanaLogin(String modo) {
+    private final PropietarioRepository propietarioRepository;
+    private final MascotaRepository mascotaRepository;
+    private final ParasitoRepository parasitoRepository;
+    private final DiagnosticoRepository diagnosticoRepository;
+    private final AuthenticationService authenticationService;
+    private final RiskAssessmentService riskAssessmentService;
+
+    public VentanaLogin(String modo,
+                        PropietarioRepository propietarioRepository,
+                        MascotaRepository mascotaRepository,
+                        ParasitoRepository parasitoRepository,
+                        DiagnosticoRepository diagnosticoRepository,
+                        AuthenticationService authenticationService,
+                        RiskAssessmentService riskAssessmentService) {
         super("VetSentinel — Login " + (modo.equals("ESTADO") ? "Salud Pública" : "Clínica"));
         this.modo = modo;
+        this.propietarioRepository = propietarioRepository;
+        this.mascotaRepository = mascotaRepository;
+        this.parasitoRepository = parasitoRepository;
+        this.diagnosticoRepository = diagnosticoRepository;
+        this.authenticationService = authenticationService;
+        this.riskAssessmentService = riskAssessmentService;
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         root = new JPanel(new BorderLayout(0, 0));
@@ -146,7 +169,6 @@ public class VentanaLogin extends VetBaseFrame {
         btnLogin.setMaximumSize(new Dimension(300, 45));
         btnLogin.addActionListener(e -> intentarLogin());
 
-        // Permitir enter para iniciar sesión
         txtPassword.addActionListener(e -> intentarLogin());
         txtUsername.addActionListener(e -> intentarLogin());
 
@@ -169,7 +191,10 @@ public class VentanaLogin extends VetBaseFrame {
         btnVolver.setBorderPainted(false);
         btnVolver.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVolver.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnVolver.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+        btnVolver.addActionListener(e -> { 
+            this.dispose(); 
+            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+        });
         card.add(btnVolver);
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -190,7 +215,7 @@ public class VentanaLogin extends VetBaseFrame {
             return;
         }
 
-        if (VeterinariaDAO.validarUsuario(user, pass)) {
+        if (authenticationService.login(user, pass)) {
             if (modo.equals("ESTADO") && !user.equalsIgnoreCase("estado")) {
                 JOptionPane.showMessageDialog(this, "Acceso denegado. Este módulo es exclusivo para el Estado.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -202,11 +227,9 @@ public class VentanaLogin extends VetBaseFrame {
             this.dispose();
             SwingUtilities.invokeLater(() -> {
                 if (modo.equals("ESTADO")) {
-                    VentanaEstado v = new VentanaEstado();
-                    v.setVisible(true);
+                    new VentanaEstado(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true);
                 } else {
-                    VentanaVeterinaria v = new VentanaVeterinaria();
-                    v.setVisible(true);
+                    new VentanaVeterinaria(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true);
                 }
             });
         } else {

@@ -1,3 +1,8 @@
+package com.vetsentinel.ui;
+
+import com.vetsentinel.repository.*;
+import com.vetsentinel.service.*;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -9,8 +14,27 @@ public class VentanaSelector extends VetBaseFrame {
     private JPanel root;
     private JButton btnThemeToggle;
 
-    public VentanaSelector() {
+    private final PropietarioRepository propietarioRepository;
+    private final MascotaRepository mascotaRepository;
+    private final ParasitoRepository parasitoRepository;
+    private final DiagnosticoRepository diagnosticoRepository;
+    private final AuthenticationService authenticationService;
+    private final RiskAssessmentService riskAssessmentService;
+
+    public VentanaSelector(PropietarioRepository propietarioRepository,
+                           MascotaRepository mascotaRepository,
+                           ParasitoRepository parasitoRepository,
+                           DiagnosticoRepository diagnosticoRepository,
+                           AuthenticationService authenticationService,
+                           RiskAssessmentService riskAssessmentService) {
         super("VetSentinel — Seleccionar Módulo");
+        this.propietarioRepository = propietarioRepository;
+        this.mascotaRepository = mascotaRepository;
+        this.parasitoRepository = parasitoRepository;
+        this.diagnosticoRepository = diagnosticoRepository;
+        this.authenticationService = authenticationService;
+        this.riskAssessmentService = riskAssessmentService;
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         root = new JPanel(new BorderLayout(0, 0));
@@ -98,13 +122,22 @@ public class VentanaSelector extends VetBaseFrame {
         container.setOpaque(false);
         
         JButton btnClinica = createModuleButton("🏥", "Módulo Clínico", "Registro de diagnósticos", () -> accentBlue);
-        btnClinica.addActionListener(e -> { this.dispose(); new VentanaLogin("CLINICA").setVisible(true); });
+        btnClinica.addActionListener(e -> { 
+            this.dispose(); 
+            new VentanaLogin("CLINICA", propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+        });
 
         JButton btnCiudadano = createModuleButton("🌍", "BioGeo Risk", "Prevención Ciudadana", () -> okGreen);
-        btnCiudadano.addActionListener(e -> { this.dispose(); new VentanaCiudadana().setVisible(true); });
+        btnCiudadano.addActionListener(e -> { 
+            this.dispose(); 
+            new VentanaCiudadana(this).setVisible(true); 
+        });
 
         JButton btnEstado = createModuleButton("📊", "Módulo Estado", "Vigilancia Epidemiológica", () -> accentTeal);
-        btnEstado.addActionListener(e -> { this.dispose(); new VentanaLogin("ESTADO").setVisible(true); });
+        btnEstado.addActionListener(e -> { 
+            this.dispose(); 
+            new VentanaLogin("ESTADO", propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+        });
 
         container.add(btnClinica);
         container.add(btnCiudadano);

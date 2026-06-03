@@ -1,17 +1,22 @@
+package com.vetsentinel.ui;
+
+import com.vetsentinel.model.*;
+import com.vetsentinel.repository.*;
+import com.vetsentinel.service.*;
+
 import javax.swing.*;
-import javax.swing.border.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
-import java.awt.geom.*;
+import java.awt.geom.RoundRectangle2D;
+import java.util.function.Supplier;
 
 public class VentanaVeterinaria extends VetBaseFrame {
 
-    // ── Tipografía ─────────────────────────────────────────────────────────────
     private static final Font FONT_TITLE   = new Font("SansSerif", Font.BOLD,  20);
     private static final Font FONT_SECTION = new Font("SansSerif", Font.BOLD,  11);
     private static final Font FONT_MONO    = new Font("Monospaced", Font.PLAIN, 12);
 
-    // ── Componentes de UI ──────────────────────────────────────────────────────
     private JPanel           root;
     private JButton          btnThemeToggle;
     private JTextField       txtNombreMascota;
@@ -40,6 +45,13 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private JTextArea alertTextArea;
     private JLabel    alertMascotaLabel;
 
+    private final PropietarioRepository propietarioRepository;
+    private final MascotaRepository mascotaRepository;
+    private final ParasitoRepository parasitoRepository;
+    private final DiagnosticoRepository diagnosticoRepository;
+    private final AuthenticationService authenticationService;
+    private final RiskAssessmentService riskAssessmentService;
+
     private static final String[] DEPARTAMENTOS = {
         "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", 
         "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", 
@@ -47,8 +59,20 @@ public class VentanaVeterinaria extends VetBaseFrame {
         "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"
     };
 
-    public VentanaVeterinaria() {
+    public VentanaVeterinaria(PropietarioRepository propietarioRepository,
+                              MascotaRepository mascotaRepository,
+                              ParasitoRepository parasitoRepository,
+                              DiagnosticoRepository diagnosticoRepository,
+                              AuthenticationService authenticationService,
+                              RiskAssessmentService riskAssessmentService) {
         super("VetSentinel — Módulo Clínico Veterinario");
+        this.propietarioRepository = propietarioRepository;
+        this.mascotaRepository = mascotaRepository;
+        this.parasitoRepository = parasitoRepository;
+        this.diagnosticoRepository = diagnosticoRepository;
+        this.authenticationService = authenticationService;
+        this.riskAssessmentService = riskAssessmentService;
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         root = new JPanel(new BorderLayout(0, 0));
@@ -58,10 +82,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         root.add(buildCenter(), BorderLayout.CENTER);
 
         setContentPane(root);
-        // Dimensiones ajustadas para adaptarse a pantallas más pequeñas
         setPreferredSize(new Dimension(1100, 750));
-
-        // Ancho mínimo: 950 | Alto mínimo: 700
         setMinimumSize(new Dimension(950, 700));
         pack();
         setLocationRelativeTo(null);
@@ -70,9 +91,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         resetAlertPanel();
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  HEADER (CON BANNER Y SWITCH DE TEMA)
-    // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildHeader() {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setPreferredSize(new Dimension(getWidth(), 180));
@@ -101,7 +119,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         imageContainer.setLayout(new BorderLayout());
         imageContainer.setBorder(new EmptyBorder(15, 25, 15, 25));
 
-        // Fila superior izquierda sobre el banner para el botón de retroceso
         JPanel topLeftRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         topLeftRow.setOpaque(false);
 
@@ -130,7 +147,10 @@ public class VentanaVeterinaria extends VetBaseFrame {
         btnVolverTop.setBorderPainted(false);
         btnVolverTop.setFocusPainted(false);
         btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnVolverTop.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+        btnVolverTop.addActionListener(e -> { 
+            this.dispose(); 
+            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+        });
 
         topLeftRow.add(btnVolverTop);
         imageContainer.add(topLeftRow, BorderLayout.NORTH);
@@ -139,9 +159,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         return headerPanel;
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  CENTRO: formulario (izq) + panel alerta (der)
-    // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildCenter() {
         JPanel center = new JPanel(new GridBagLayout()) {
             @Override protected void paintComponent(Graphics g) {
@@ -155,7 +172,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(0, 0, 0, 12);
-        gbc.weightx = 0.65; // Dar mayor prioridad de espacio al formulario
+        gbc.weightx = 0.65;
         gbc.weighty = 1.0;
         gbc.gridx = 0; gbc.gridy = 0;
         
@@ -169,13 +186,12 @@ public class VentanaVeterinaria extends VetBaseFrame {
         center.add(leftContainer, gbc);
 
         gbc.gridx = 1;
-        gbc.insets = new Insets(0, 0, 0, 0); // Modificado para integrar los botones arriba
-        gbc.weightx = 0.35; // Reducir el espacio del panel de alertas
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.weightx = 0.35;
         
         JPanel rightContainer = new JPanel(new BorderLayout());
         rightContainer.setOpaque(false);
         
-        // Fila superior derecha ("Sistema activo" y Botón Tema)
         JPanel topRightRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         topRightRow.setOpaque(false);
 
@@ -230,9 +246,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         return center;
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  FORMULARIO
-    // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildFormPanel() {
         JPanel card = createCard();
         card.setLayout(new BorderLayout());
@@ -240,7 +253,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         JPanel formContent = new JPanel();
         formContent.setLayout(new BoxLayout(formContent, BoxLayout.Y_AXIS));
         formContent.setOpaque(false);
-        formContent.setBorder(new EmptyBorder(0, 0, 0, 8)); // Margen derecho para el scroll
+        formContent.setBorder(new EmptyBorder(0, 0, 0, 8));
 
         formContent.add(sectionLabel("DATOS DE LA MASCOTA"));
         formContent.add(Box.createVerticalStrut(5));
@@ -257,7 +270,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         formContent.add(Box.createVerticalStrut(3));
         formContent.add(fieldRow("Especie", cbEspecie = createCombo(new String[]{"Gato", "Perro"})));
         formContent.add(Box.createVerticalStrut(3));
-        java.util.List<Parasito> parasitosDB = VeterinariaDAO.obtenerTodosLosParasitos();
+        java.util.List<Parasito> parasitosDB = parasitoRepository.obtenerTodos();
         formContent.add(fieldRow("Parásito diagnosticado",
                 cbParasito = createCombo(parasitosDB.toArray(new Parasito[0]))));
 
@@ -298,22 +311,14 @@ public class VentanaVeterinaria extends VetBaseFrame {
         JPanel rowEmbarazos = fieldRow("Número de embarazos previos (paridad)", txtNumeroEmbarazos = createTextField("Ej: 0, 1, 2..."));
         rowEmbarazos.setVisible(false);
         formContent.add(rowEmbarazos);
-        txtNumeroEmbarazos.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyTyped(java.awt.event.KeyEvent e) {
-                if (!Character.isDigit(e.getKeyChar()) && e.getKeyChar() != java.awt.event.KeyEvent.VK_BACK_SPACE) {
-                    e.consume();
-                }
-            }
-        });
 
         formContent.add(Box.createVerticalStrut(10));
         formContent.add(sectionLabel("FACTORES DE RIESGO EN EL HOGAR"));
         formContent.add(Box.createVerticalStrut(5));
 
-        JPanel riskRow = new JPanel(new GridLayout(1, 3, 6, 0)); // Espacio optimizado entre tarjetas
+        JPanel riskRow = new JPanel(new GridLayout(1, 3, 6, 0));
         riskRow.setOpaque(false);
         riskRow.setAlignmentX(Component.LEFT_ALIGNMENT); 
-        // Garantizar que layout no se auto-oculte por BoxLayout: SIN restricciones MaximumSize estrictas!
         chkEmbarazadas = createCheckBox();
         chkEmbarazadas.addItemListener(e -> {
             rowEmbarazos.setVisible(chkEmbarazadas.isSelected());
@@ -328,12 +333,10 @@ public class VentanaVeterinaria extends VetBaseFrame {
         formContent.add(Box.createVerticalStrut(10));
         formContent.add(buildButtonRow());
 
-        // Envolver en BorderLayout.NORTH evita estiramientos y cortes verticales u horizontales
         JPanel formWrapper = new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {
                 Dimension d = super.getPreferredSize();
-                // Forza al panel a adaptarse dinámicamente al ancho visible del scroll
                 if (getParent() instanceof JViewport) d.width = getParent().getWidth();
                 return d;
             }
@@ -369,14 +372,10 @@ public class VentanaVeterinaria extends VetBaseFrame {
         return row;
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  PANEL DE ALERTA (derecha)
-    // ══════════════════════════════════════════════════════════════════════════
     private JPanel buildAlertPanel() {
         alertPanel = createCard();
         alertPanel.setLayout(new BorderLayout(0, 12));
 
-        // Cabecera de la alerta
         JPanel alertHeader = new JPanel(new BorderLayout(10, 0));
         alertHeader.setOpaque(false);
 
@@ -392,7 +391,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         alertHeader.add(alertIconLabel,  BorderLayout.WEST);
         alertHeader.add(alertTitles,     BorderLayout.CENTER);
 
-        // Separador
         JSeparator sep = new JSeparator() {
             @Override protected void paintComponent(Graphics g) {
                 g.setColor(borderColor);
@@ -401,7 +399,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         };
         updaters.add(sep::repaint);
 
-        // Área de texto de la alerta
         alertTextArea = new JTextArea();
         alertTextArea.setEditable(false);
         alertTextArea.setOpaque(false);
@@ -418,7 +415,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         alertScroll.setBorder(null);
         styleScrollBar(alertScroll);
 
-        // Estado vacío (Empty State) con ilustración minimalista
         JPanel emptyStatePanel = new JPanel(new GridBagLayout());
         emptyStatePanel.setOpaque(false);
         JLabel emptyIcon = new JLabel("🩺");
@@ -435,7 +431,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         alertCenterWrapper.add(emptyStatePanel, "EMPTY");
         alertCenterWrapper.add(alertScroll, "DATA");
 
-        // Updater específico para los textos del panel interactivo de la derecha
         updaters.add(() -> {
             if ("EN ESPERA".equals(alertNivelLabel.getText())) {
                 alertNivelLabel.setForeground(textMuted);
@@ -443,7 +438,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
                 alertIconLabel.setForeground(textMuted);
             } else {
                 alertMascotaLabel.setForeground(textPrimary);
-                if (alertNivelLabel.getText().contains("CRÍTICO")) alertNivelLabel.setForeground(dangerRed);
+                if (alertNivelLabel.getText().contains("CRÍTICO") || alertNivelLabel.getText().contains("CRITICO")) alertNivelLabel.setForeground(dangerRed);
                 else if (alertNivelLabel.getText().contains("ALTO")) alertNivelLabel.setForeground(warnOrange);
                 else alertNivelLabel.setForeground(okGreen);
             }
@@ -454,7 +449,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
             }
         });
 
-        // Footer interactivo con logo reubicado a la esquina inferior derecha
         JPanel footerRow = new JPanel(new BorderLayout());
         footerRow.setOpaque(false);
         
@@ -483,7 +477,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         footerRow.add(footer, BorderLayout.WEST);
         footerRow.add(rightTitles, BorderLayout.EAST);
 
-        // Separador sutil a la izquierda para enmarcar el panel de análisis
         JPanel mainBody = new JPanel(new BorderLayout(0, 8)) {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -503,9 +496,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         return alertPanel;
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  LÓGICA
-    // ══════════════════════════════════════════════════════════════════════════
     private void wireListeners() {
         btnGuardar.addActionListener(e -> guardarYMostrarAlerta());
         btnVerHistorial.addActionListener(e -> verHistorial());
@@ -513,14 +503,22 @@ public class VentanaVeterinaria extends VetBaseFrame {
     }
 
     private void verEstadisticas() {
-        String stats = VeterinariaDAO.obtenerEstadisticasEpidemiologicas();
-        showStyledDialog("Dashboard Epidemiológico INS", stats, JOptionPane.INFORMATION_MESSAGE);
+        int totalMascotas = diagnosticoRepository.obtenerTotalMascotasEvaluadas();
+        int totalCriticos = diagnosticoRepository.obtenerTotalDiagnosticosCriticos();
+        String parasitoComun = diagnosticoRepository.obtenerParasitoPredominante();
+        
+        StringBuilder stats = new StringBuilder();
+        stats.append("Total de mascotas evaluadas: ").append(totalMascotas).append("\n\n");
+        stats.append("Total de diagnósticos críticos: ").append(totalCriticos).append("\n\n");
+        stats.append("Parásito predominante en clínica: ").append(parasitoComun);
+        
+        showStyledDialog("Dashboard Epidemiológico INS", stats.toString(), JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void buscarClienteAutocompletar() {
         String ced = txtCedula.getText().trim();
         if (ced.isEmpty()) return;
-        Propietario p = VeterinariaDAO.buscarPropietarioPorCedula(ced);
+        Propietario p = propietarioRepository.buscarPorCedula(ced);
         if (p != null) {
             txtNombrePropietario.setText(p.getNombre());
             txtDireccion.setText(p.getDireccion());
@@ -594,7 +592,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         Diagnostico diagnostico = new Diagnostico(0, mascota, selectedParasito,
                 java.time.LocalDate.now().toString(), "Activo");
 
-        String alerta = RiesgoService.evaluarRiesgoHumano(diagnostico);
+        String alerta = riskAssessmentService.evaluarRiesgoHumano(diagnostico);
         
         String nivelBD = "BAJO";
         if (alerta.contains("NIVEL: EMERGENCIA CRÍTICA") || alerta.contains("EMERGENCIA CRITICA")) nivelBD = "EMERGENCIA CRÍTICA";
@@ -606,14 +604,14 @@ public class VentanaVeterinaria extends VetBaseFrame {
         mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
         
         try {
-            int idProp = VeterinariaDAO.upsertPropietario(propietario);
+            int idProp = propietarioRepository.upsert(propietario);
             propietario.setId(idProp);
             mascota.getPropietario().setId(idProp);
             
-            int idMasc = VeterinariaDAO.upsertMascota(mascota);
+            int idMasc = mascotaRepository.upsert(mascota);
             mascota.setId(idMasc);
             
-            VeterinariaDAO.insertarDiagnostico(idMasc, selectedParasito.getId(), nivelBD);
+            diagnosticoRepository.registrar(idMasc, selectedParasito.getId(), nivelBD);
         } catch (java.sql.SQLException ex) {
             showStyledDialog("Error al guardar en BD", ex.getMessage(), JOptionPane.ERROR_MESSAGE);
         }
@@ -648,84 +646,80 @@ public class VentanaVeterinaria extends VetBaseFrame {
     }
 
     private void verHistorial() {
-        Object[][] data = VeterinariaDAO.obtenerHistorial();
+        Object[][] data = diagnosticoRepository.obtenerHistorial();
         String[] cols = {"Fecha", "Riesgo", "Cédula", "Propietario", "Dirección", "Mascota", "Especie", "Parásito"};
 
-            JTable table = new JTable(data, cols) {
-                @Override public boolean isCellEditable(int r, int c) { return false; }
-                @Override public Component prepareRenderer(javax.swing.table.TableCellRenderer r, int row, int col) {
-                    Component c = super.prepareRenderer(r, row, col);
-                    c.setBackground(row % 2 == 0 ? bgCard : bgPanel);
-                    c.setForeground(textPrimary);
-                    
-                    if (col == 1) { // RIESGO column
-                        String v = getValueAt(row, col).toString();
-                        if ("EMERGENCIA CRÍTICA".equals(v) || "EMERGENCIA CRITICA".equals(v)) c.setForeground(dangerRed);
-                        else if ("CRITICO".equals(v) || "CRÍTICO".equals(v)) c.setForeground(dangerRed);
-                        else if ("ALTO".equals(v) || "MODERADO".equals(v)) c.setForeground(warnOrange);
-                        else if ("MEDIO".equals(v)) c.setForeground(new Color(230, 180, 50));
-                        else if ("BAJO".equals(v)) c.setForeground(okGreen);
-                    }
-                    
-                    ((JComponent)c).setBorder(new EmptyBorder(6, 10, 6, 10));
-                    return c;
+        JTable table = new JTable(data, cols) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+            @Override public Component prepareRenderer(javax.swing.table.TableCellRenderer r, int row, int col) {
+                Component c = super.prepareRenderer(r, row, col);
+                c.setBackground(row % 2 == 0 ? bgCard : bgPanel);
+                c.setForeground(textPrimary);
+                
+                if (col == 1) {
+                    String v = getValueAt(row, col).toString();
+                    if ("EMERGENCIA CRÍTICA".equals(v) || "EMERGENCIA CRITICA".equals(v)) c.setForeground(dangerRed);
+                    else if ("CRITICO".equals(v) || "CRÍTICO".equals(v)) c.setForeground(dangerRed);
+                    else if ("ALTO".equals(v) || "MODERADO".equals(v)) c.setForeground(warnOrange);
+                    else if ("MEDIO".equals(v)) c.setForeground(new Color(230, 180, 50));
+                    else if ("BAJO".equals(v)) c.setForeground(okGreen);
                 }
-            };
-            table.setBackground(bgCard);
-            table.setForeground(textPrimary);
-            table.setFont(FONT_INPUT);
-            table.setRowHeight(34);
-            table.setShowGrid(false);
-            table.setIntercellSpacing(new Dimension(0, 0));
-            table.getTableHeader().setBackground(bgDark);
-            table.getTableHeader().setForeground(accentTeal);
-            table.getTableHeader().setFont(FONT_SECTION);
-            table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor));
-            
-            // Mejorar estética ajustando el ancho de cada columna individualmente
-            if(table.getColumnModel().getColumnCount() == 8) {
-                table.getColumnModel().getColumn(0).setPreferredWidth(85);  // Fecha
-                table.getColumnModel().getColumn(1).setPreferredWidth(80);  // Riesgo
-                table.getColumnModel().getColumn(2).setPreferredWidth(90);  // Cédula
-                table.getColumnModel().getColumn(3).setPreferredWidth(125); // Propietario
-                table.getColumnModel().getColumn(4).setPreferredWidth(140); // Dirección
-                table.getColumnModel().getColumn(5).setPreferredWidth(85);  // Mascota
-                table.getColumnModel().getColumn(6).setPreferredWidth(70);  // Especie
-                table.getColumnModel().getColumn(7).setPreferredWidth(150); // Parásito
+                
+                ((JComponent)c).setBorder(new EmptyBorder(6, 10, 6, 10));
+                return c;
             }
+        };
+        table.setBackground(bgCard);
+        table.setForeground(textPrimary);
+        table.setFont(FONT_INPUT);
+        table.setRowHeight(34);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.getTableHeader().setBackground(bgDark);
+        table.getTableHeader().setForeground(accentTeal);
+        table.getTableHeader().setFont(FONT_SECTION);
+        table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor));
+        
+        if(table.getColumnModel().getColumnCount() == 8) {
+            table.getColumnModel().getColumn(0).setPreferredWidth(85);
+            table.getColumnModel().getColumn(1).setPreferredWidth(80);
+            table.getColumnModel().getColumn(2).setPreferredWidth(90);
+            table.getColumnModel().getColumn(3).setPreferredWidth(125);
+            table.getColumnModel().getColumn(4).setPreferredWidth(140);
+            table.getColumnModel().getColumn(5).setPreferredWidth(85);
+            table.getColumnModel().getColumn(6).setPreferredWidth(70);
+            table.getColumnModel().getColumn(7).setPreferredWidth(150);
+        }
 
-            JScrollPane scroll = new JScrollPane(table);
-            scroll.setPreferredSize(new Dimension(950, 380));
-            scroll.setBackground(bgCard);
-            scroll.getViewport().setBackground(bgCard);
-            scroll.setBorder(BorderFactory.createLineBorder(borderColor));
-            styleScrollBar(scroll);
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setPreferredSize(new Dimension(950, 380));
+        scroll.setBackground(bgCard);
+        scroll.getViewport().setBackground(bgCard);
+        scroll.setBorder(BorderFactory.createLineBorder(borderColor));
+        styleScrollBar(scroll);
 
-            JPanel dialogPanel = new JPanel(new BorderLayout(0, 10));
-            dialogPanel.setBackground(bgPanel);
-            dialogPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
+        JPanel dialogPanel = new JPanel(new BorderLayout(0, 10));
+        dialogPanel.setBackground(bgPanel);
+        dialogPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-            JLabel dlgTitle = makeLabel("Historial de Diagnósticos", FONT_TITLE, () -> accentTeal);
-            JLabel dlgSub   = makeLabel(data.length + " registro(s) encontrado(s)", FONT_LABEL, () -> textMuted);
-            JPanel dlgHeader = new JPanel(new GridLayout(2,1,0,4));
-            dlgHeader.setOpaque(false);
-            dlgHeader.add(dlgTitle);
-            dlgHeader.add(dlgSub);
+        JLabel dlgTitle = makeLabel("Historial de Diagnósticos", FONT_TITLE, () -> accentTeal);
+        JLabel dlgSub   = makeLabel(data.length + " registro(s) encontrado(s)", FONT_LABEL, () -> textMuted);
+        JPanel dlgHeader = new JPanel(new GridLayout(2,1,0,4));
+        dlgHeader.setOpaque(false);
+        dlgHeader.add(dlgTitle);
+        dlgHeader.add(dlgSub);
 
-            dialogPanel.add(dlgHeader, BorderLayout.NORTH);
-            dialogPanel.add(scroll,    BorderLayout.CENTER);
+        dialogPanel.add(dlgHeader, BorderLayout.NORTH);
+        dialogPanel.add(scroll,    BorderLayout.CENTER);
 
-            JOptionPane pane = new JOptionPane(dialogPanel,
-                    JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION);
-            JDialog dialog = pane.createDialog(this, "VetSentinel — Historial");
-            dialog.getContentPane().setBackground(bgPanel);
-            dialog.setBackground(bgPanel);
-            dialog.setVisible(true);
+        JOptionPane pane = new JOptionPane(dialogPanel,
+                JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION);
+        JDialog dialog = pane.createDialog(this, "VetSentinel — Historial");
+        dialog.getContentPane().setBackground(bgPanel);
+        dialog.setBackground(bgPanel);
+        dialog.setVisible(true);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  HELPERS DE UI
-    // ══════════════════════════════════════════════════════════════════════════
     private JPanel createCard() {
         JPanel p = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
@@ -803,7 +797,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
     }
 
     private JPanel riskCard(String emoji, String label, JCheckBox cb) {
-        cb.setVisible(false); // Ocultar el checkbox real
+        cb.setVisible(false);
 
         JPanel p = new JPanel(new GridBagLayout()) {
             boolean isHovered = false;
@@ -873,7 +867,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         gbc.insets = new Insets(0, 0, 0, 0);
         p.add(lbl, gbc);
 
-        p.add(cb); // Checkbox oculto acoplado para no romper lógica externa
+        p.add(cb);
 
         updaters.add(p::repaint);
         return p;

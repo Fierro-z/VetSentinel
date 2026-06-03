@@ -1,3 +1,5 @@
+package com.vetsentinel.ui;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicScrollBarUI;
@@ -28,6 +30,8 @@ public class VentanaCiudadana extends VetBaseFrame {
     private JTextArea alertTextArea;
     private JLabel alertMascotaLabel;
 
+    private final VentanaSelector selector;
+
     private static final String[] DEPARTAMENTOS = {
         "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", 
         "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", 
@@ -35,8 +39,9 @@ public class VentanaCiudadana extends VetBaseFrame {
         "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"
     };
 
-    public VentanaCiudadana() {
+    public VentanaCiudadana(VentanaSelector selector) {
         super("BioGeo Risk — Módulo Ciudadano Preventivo");
+        this.selector = selector;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         root = new JPanel(new BorderLayout(0, 0));
@@ -110,7 +115,10 @@ public class VentanaCiudadana extends VetBaseFrame {
         btnVolverTop.setBorderPainted(false);
         btnVolverTop.setFocusPainted(false);
         btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnVolverTop.addActionListener(e -> { this.dispose(); new VentanaSelector().setVisible(true); });
+        btnVolverTop.addActionListener(e -> { 
+            this.dispose(); 
+            selector.setVisible(true); 
+        });
 
         topLeftRow.add(btnVolverTop);
         imageContainer.add(topLeftRow, BorderLayout.NORTH);
@@ -423,28 +431,24 @@ public class VentanaCiudadana extends VetBaseFrame {
         boolean esCritico = false;
         boolean esAlto = false;
         
-        // Altitud para Leishmaniasis (Lutzomyia es receptiva a altitudes bajas)
         if (altitud < 1600) {
             reporte.append("🚨 ALERTA DE RECEPTIVIDAD VECTORIAL (LEISHMANIASIS):\n");
             reporte.append("- Altitud inferior a 1,600 msnm. Condiciones bioclimáticas óptimas para la presencia del vector Lutzomyia sp.\n\n");
             esAlto = true;
         }
         
-        // Área Rural
         if (area.equalsIgnoreCase("Rural")) {
             reporte.append("🌾 ALERTA DE RURALIDAD (LEISHMANIASIS):\n");
             reporte.append("- El 82.7% de los casos nacionales ocurren en zonas rurales. Mayor probabilidad de contacto peridomiciliario con el vector.\n\n");
             esAlto = true;
         }
         
-        // Toxoplasmosis
         if (tieneGatos && tieneGestantes) {
             reporte.append("🤰 ALERTA DE TOXOPLASMOSIS EN EL HOGAR:\n");
             reporte.append("- Coexistencia de felinos y mujeres gestantes. Alto riesgo de transmisión si hay manipulación de excretas.\n\n");
             esCritico = true;
         }
         
-        // Toxocariasis
         if (tieneNinos) {
             reporte.append("👶 ALERTA PREVENTIVA DE TOXOCARIASIS:\n");
             reporte.append("- Hogar con niños pequeños. Riesgo de transmisión por ingesta accidental de huevos de Toxocara sp. en zonas de juego y parques.\n\n");

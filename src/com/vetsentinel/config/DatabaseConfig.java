@@ -1,28 +1,27 @@
+package com.vetsentinel.config;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
-public class ConexionDB {
+public class DatabaseConfig {
 
-    // El archivo .db se crea solo en la carpeta del proyecto
     private static final String URL = "jdbc:sqlite:vetsentinel.db";
 
-    public static Connection getConexion() throws SQLException {
+    public Connection getConnection() throws SQLException {
         try {
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
-            throw new SQLException("Driver SQLite no encontrado. Agrega el .jar al proyecto.");
+            throw new SQLException("Driver SQLite no encontrado.", e);
         }
         return DriverManager.getConnection(URL);
     }
 
-    // Crea las tablas y datos base si no existen
-    public static void inicializarBD() {
-        try (Connection con = getConexion(); Statement stmt = con.createStatement()) {
-
+    public void inicializarBD() {
+        try (Connection con = getConnection(); Statement stmt = con.createStatement()) {
             stmt.execute("CREATE TABLE IF NOT EXISTS Parasitos (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "nombre TEXT NOT NULL," +
@@ -69,7 +68,7 @@ public class ConexionDB {
                     "username TEXT UNIQUE NOT NULL," +
                     "password TEXT NOT NULL)");
 
-            // Intento seguro de migrar bases de datos existentes
+            // Intentos seguros de migración
             try { stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_embarazo INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
@@ -85,13 +84,13 @@ public class ConexionDB {
             // Eliminar parásitos antiguos que no correspondan
             stmt.execute("DELETE FROM Parasitos WHERE nombre NOT LIKE '%Toxoplasma%' AND nombre NOT LIKE '%Leishmania%' AND nombre NOT LIKE '%Toxocara%'");
 
-            // Datos de los parásitos permitidos (con diferenciación de cepas de Leishmaniasis)
+            // Semilla de parásitos
             String[][] parasitosData = {
-                {"Toxoplasmosis", "Infección causada por el parásito Toxoplasma gondii. Se transmite por heces de gatos, carne mal cocida o alimentos/agua contaminados. Riesgo crítico en gestantes.", "Evitar manipulación de arena de gato por gestantes y cocer bien las carnes.", "1", "0", "0"},
-                {"Leishmaniasis Cutánea", "Enfermedad parasitaria transmitida por Lutzomyia. Produce lesiones ulcerativas en la piel.", "Uso de repelentes, ropa de manga larga, toldillos y control de vectores.", "0", "1", "1"},
+                {"Toxoplasmosis", "Infección por Toxoplasma gondii. Se transmite por heces fecales de gatos, carne mal cocida o agua contaminada. Riesgo crítico en gestantes.", "Evitar manipulación de arena de gato por gestantes y cocer bien las carnes.", "1", "0", "0"},
+                {"Leishmaniasis Cutánea", "Enfermedad transmitida por la picadura del insecto Lutzomyia. Produce lesiones ulcerativas en la piel.", "Uso de repelentes, ropa de manga larga, toldillos y control de vectores.", "0", "1", "1"},
                 {"Leishmaniasis Mucosa", "Afectación de las mucosas nasofaríngeas, causando lesiones destructivas secundarias.", "Tratamiento oportuno de la fase cutánea y control entomológico.", "0", "1", "1"},
                 {"Leishmaniasis Visceral", "Enfermedad sistémica grave con afectación de bazo e hígado. Letalidad >95% sin tratamiento.", "Uso de toldillos, fumigación peridomiciliar y control de reservorios.", "0", "1", "1"},
-                {"Toxocariasis", "Infección causada por parásitos de perros y gatos. Común en niños por ingerir tierra con huevos.", "Desparasitar mascotas periódicamente y evitar contacto con suelos de parques sospechosos.", "0", "1", "0"}
+                {"Toxocariasis", "Infección zoonótica común. Los niños se contagian al ingerir huevos presentes en suelos contaminados.", "Desparasitar mascotas periódicamente y evitar contacto con suelos de parques sospechosos.", "0", "1", "0"}
             };
 
             for (String[] pData : parasitosData) {
@@ -102,7 +101,6 @@ public class ConexionDB {
                 int alertaNinos = Integer.parseInt(pData[4]);
                 int alertaZonaRural = Integer.parseInt(pData[5]);
 
-                // Buscar si ya existe por nombre exacto
                 PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Parasitos WHERE nombre = ?");
                 psCheck.setString(1, nombre);
                 ResultSet rsCheck = psCheck.executeQuery();
@@ -132,18 +130,19 @@ public class ConexionDB {
                 }
             }
 
+            // Semilla de usuarios por defecto
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
-            if (rsUsr.next() && rsUsr.getInt(1) == 0) {
+            int userCount = rsUsr.next() ? rsUsr.getInt(1) : 0;
+            if (userCount == 0) {
                 stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('admin', 'admin123')");
                 stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('estado', 'estado123')");
+            } else {
+                // Asegurar que 'estado' esté registrado por si acaso
+                try { stmt.execute("INSERT OR IGNORE INTO Usuarios (username, password) VALUES ('estado', 'estado123')"); } catch (SQLException ignore) {}
             }
-            try { stmt.execute("INSERT OR IGNORE INTO Usuarios (username, password) VALUES ('estado', 'estado123')"); } catch (SQLException ignore) {}
-
-            System.out.println("Base de datos lista: vetsentinel.db");
 
         } catch (SQLException e) {
-            System.out.println("Error al inicializar BD: " + e.getMessage());
+            System.err.println("Error al inicializar la base de datos: " + e.getMessage());
         }
     }
-
 }
