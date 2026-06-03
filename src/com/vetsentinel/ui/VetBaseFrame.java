@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 
 public abstract class VetBaseFrame extends JFrame {
 
-    protected boolean isDarkMode = false;
+    protected static boolean isDarkMode = false;
     protected List<Runnable> updaters = new ArrayList<>();
 
     // ── Paleta de colores Dinámica ─────────────────────────────────────────────
