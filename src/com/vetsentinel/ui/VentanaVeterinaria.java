@@ -561,6 +561,12 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private void buscarClienteAutocompletar() {
         String ced = txtCedula.getText().trim();
         if (ced.isEmpty()) return;
+        if (!ced.matches("^[0-9]{5,15}$")) {
+            showStyledDialog("Cédula Inválida", 
+                    "La cédula para buscar debe contener únicamente números y tener entre 5 y 15 dígitos.", 
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         Propietario p = propietarioRepository.buscarPorCedula(ced);
         if (p != null) {
             txtNombrePropietario.setText(p.getNombre());
@@ -605,33 +611,135 @@ public class VentanaVeterinaria extends VetBaseFrame {
             return;
         }
 
-        String nombreMascota    = txtNombreMascota.getText().trim();
+        String rawNombreMascota = txtNombreMascota.getText().trim();
+        String rawCedula = txtCedula.getText().trim();
+        String rawNombrePropietario = txtNombrePropietario.getText().trim();
+        String rawDireccion = txtDireccion.getText().trim();
+        String rawEdadMascota = txtEdadMascota.getText().trim();
+        String rawNumeroEmbarazos = txtNumeroEmbarazos.getText().trim();
+        String rawAltitud = txtAltitud.getText().trim();
+
+        // 1. Sanitización de textos
+        String nombreMascota = sanitizar(rawNombreMascota);
+        String cedula = sanitizar(rawCedula);
+        String nombrePropietario = sanitizar(rawNombrePropietario);
+        String direccion = sanitizar(rawDireccion);
+
+        // 2. Validación de Cédula
+        if (!cedula.matches("^[0-9]{5,15}$")) {
+            showStyledDialog("Cédula Inválida", 
+                    "La cédula debe contener únicamente números y tener entre 5 y 15 dígitos.", 
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 3. Validación de Nombre de Propietario
+        if (!nombrePropietario.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s'\\-]{2,80}$")) {
+            showStyledDialog("Nombre de Propietario Inválido", 
+                    "El nombre del propietario debe contener únicamente letras y espacios (entre 2 y 80 caracteres).", 
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 4. Validación de Nombre de Mascota
+        if (!nombreMascota.matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\\s'\\-]{1,40}$")) {
+            showStyledDialog("Nombre de Mascota Inválido", 
+                    "El nombre de la mascota debe contener únicamente letras, números y espacios (entre 1 y 40 caracteres).", 
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 5. Validación de Dirección
+        if (!direccion.matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\\s.,#\\-()]{3,120}$")) {
+            showStyledDialog("Dirección Inválida", 
+                    "La dirección debe contener letras, números, espacios y los caracteres permitidos (., # - ()), con una longitud entre 3 y 120 caracteres.", 
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 6. Validación de Edad de Mascota
+        int edad = 1;
+        if (!rawEdadMascota.isEmpty()) {
+            if (!rawEdadMascota.matches("^[0-9]+$")) {
+                showStyledDialog("Edad Inválida", 
+                        "La edad de la mascota debe ser un número entero positivo.", 
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try {
+                edad = Integer.parseInt(rawEdadMascota);
+                if (edad < 0 || edad > 30) {
+                    showStyledDialog("Edad Inválida", 
+                            "La edad de la mascota debe estar entre 0 y 30 años.", 
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                showStyledDialog("Edad Inválida", "La edad de la mascota no es válida.", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
+        // 7. Validación de Número de Embarazos Previos
+        int numeroEmbarazos = 0;
+        if (chkEmbarazadas.isSelected() && !rawNumeroEmbarazos.isEmpty()) {
+            if (!rawNumeroEmbarazos.matches("^[0-9]+$")) {
+                showStyledDialog("Número de Embarazos Inválido", 
+                        "El número de embarazos previos debe ser un número entero positivo.", 
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try {
+                numeroEmbarazos = Integer.parseInt(rawNumeroEmbarazos);
+                if (numeroEmbarazos < 0 || numeroEmbarazos > 20) {
+                    showStyledDialog("Número de Embarazos Inválido", 
+                            "El número de embarazos previos debe estar entre 0 y 20.", 
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                showStyledDialog("Número de Embarazos Inválido", "El número de embarazos previos no es válido.", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
+        // 8. Validación de Altitud
+        int altitud = 0;
+        if (!rawAltitud.isEmpty()) {
+            if (!rawAltitud.matches("^-?[0-9]+$")) {
+                showStyledDialog("Altitud Inválida", 
+                        "La altitud debe ser un número entero.", 
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try {
+                altitud = Integer.parseInt(rawAltitud);
+                if (altitud < -100 || altitud > 6000) {
+                    showStyledDialog("Altitud Inválida", 
+                            "La altitud debe estar en el rango de -100 a 6000 metros.", 
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                showStyledDialog("Altitud Inválida", "La altitud no es válida.", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
         String especie          = cbEspecie.getSelectedItem().toString();
-        int    edad             = 1;
-        try { edad = Integer.parseInt(txtEdadMascota.getText().trim()); }
-        catch (NumberFormatException ignored) {}
         Parasito selectedParasito = (Parasito) cbParasito.getSelectedItem();
         if (selectedParasito != null && selectedParasito.getNombre().equalsIgnoreCase("Leishmaniasis")) {
             selectedParasito = (Parasito) cbSubParasito.getSelectedItem();
         }
         String nombreParasito = selectedParasito != null ? selectedParasito.getNombre() : "No especificado";
-        String cedula           = txtCedula.getText().trim();
-        String nombrePropietario = txtNombrePropietario.getText().trim();
-        String direccion        = txtDireccion.getText().trim();
         String departamento     = cbDepartamento.getSelectedItem().toString();
         boolean embarazada      = chkEmbarazadas.isSelected();
         boolean ninos           = chkNinos.isSelected();
         boolean zonaRural       = chkZonaRural.isSelected();
-        int numeroEmbarazos = 0;
-        try { numeroEmbarazos = Integer.parseInt(txtNumeroEmbarazos.getText().trim()); }
-        catch (NumberFormatException ignored) {}
         int estrato = 1;
         try { estrato = Integer.parseInt(cbEstrato.getSelectedItem().toString()); }
         catch (NumberFormatException ignored) {}
         String regimen = cbRegimen.getSelectedItem().toString();
-        int altitud = 0;
-        try { altitud = Integer.parseInt(txtAltitud.getText().trim()); }
-        catch (NumberFormatException ignored) {}
 
         Propietario propietario = new Propietario(0, cedula, nombrePropietario, direccion, departamento, ninos, embarazada, numeroEmbarazos, zonaRural, estrato, regimen, altitud);
         Mascota     mascota     = new Mascota(0, nombreMascota, especie, edad, propietario);
@@ -929,5 +1037,19 @@ public class VentanaVeterinaria extends VetBaseFrame {
 
     private void showStyledDialog(String title, String msg, int type) {
         JOptionPane.showMessageDialog(this, msg, title, type);
+    }
+
+    private String sanitizar(String input) {
+        if (input == null) return "";
+        // Eliminar etiquetas HTML/XML
+        String clean = input.replaceAll("<[^>]*>", "");
+        // Eliminar secuencias que simulan inyección SQL o comentarios
+        clean = clean.replace("'", "")
+                     .replace("\"", "")
+                     .replace(";", "")
+                     .replace("--", "")
+                     .replace("/*", "")
+                     .replace("*/", "");
+        return clean.trim();
     }
 }

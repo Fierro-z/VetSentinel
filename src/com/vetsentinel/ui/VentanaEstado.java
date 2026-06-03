@@ -9,6 +9,10 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.List;
 import java.util.Map;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.IOException;
 
 public class VentanaEstado extends VetBaseFrame {
 
@@ -205,6 +209,35 @@ public class VentanaEstado extends VetBaseFrame {
         );
         header.add(title, BorderLayout.WEST);
 
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+
+        JButton btnExportar = new JButton("📥 Exportar CSV") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(isDarkMode ? new Color(30, 41, 55, 220) : new Color(255, 255, 255, 220));
+                if (getModel().isRollover()) g2.setColor(isDarkMode ? new Color(45, 60, 80, 255) : new Color(235, 240, 245, 255));
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                g2.setColor(borderColor);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                g2.setColor(accentTeal);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(getText(), x, y);
+                g2.dispose();
+            }
+        };
+        btnExportar.setPreferredSize(new Dimension(110, 26));
+        btnExportar.setContentAreaFilled(false);
+        btnExportar.setBorderPainted(false);
+        btnExportar.setFocusPainted(false);
+        btnExportar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnExportar.addActionListener(e -> exportarDatosCSV());
+        buttonPanel.add(btnExportar);
+
         if (selectedDepartamento != null) {
             JButton btnVolver = new JButton("⬅ Volver") {
                 @Override protected void paintComponent(Graphics g) {
@@ -233,9 +266,10 @@ public class VentanaEstado extends VetBaseFrame {
                 selectedDepartamento = null;
                 actualizarTablaCepas();
             });
-            header.add(btnVolver, BorderLayout.EAST);
+            buttonPanel.add(btnVolver);
         }
 
+        header.add(buttonPanel, BorderLayout.EAST);
         return header;
     }
 
@@ -339,5 +373,84 @@ public class VentanaEstado extends VetBaseFrame {
         p.setBorder(new EmptyBorder(20, 20, 20, 20));
         updaters.add(p::repaint);
         return p;
+    }
+
+    private void exportarDatosCSV() {
+        String proposedName = selectedDepartamento == null 
+                ? "reporte_nacional_vetsentinel.csv" 
+                : "reporte_casos_" + selectedDepartamento.toLowerCase().replace(" ", "_") + "_vetsentinel.csv";
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Exportar Reporte a CSV");
+        fileChooser.setSelectedFile(new File(proposedName));
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Archivos CSV (*.csv)", "csv"));
+
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File fileToSave = fileChooser.getSelectedFile();
+        if (!fileToSave.getName().toLowerCase().endsWith(".csv")) {
+            fileToSave = new File(fileToSave.getParentFile(), fileToSave.getName() + ".csv");
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(fileToSave);
+             OutputStreamWriter osw = new OutputStreamWriter(fos, java.nio.charset.StandardCharsets.UTF_8)) {
+            
+            // Escribir UTF-8 BOM para compatibilidad con MS Excel
+            fos.write(0xEF);
+            fos.write(0xBB);
+            fos.write(0xBF);
+
+            if (selectedDepartamento == null) {
+                // Cabecera reporte general
+                osw.write("Departamento,Cepa / Parasito,Casos,Riesgo Max\n");
+                List<String[]> cepas = diagnosticoRepository.obtenerCepasPorUbicacion();
+                for (String[] row : cepas) {
+                    osw.write(escapeCSV(row[0]) + "," +
+                              escapeCSV(row[1]) + "," +
+                              escapeCSV(row[2]) + "," +
+                              escapeCSV(row[3]) + "\n");
+                }
+            } else {
+                // Cabecera reporte detallado
+                osw.write("Fecha,Propietario,Direccion / Municipio,Mascota,Especie,Parasito,Riesgo\n");
+                Object[][] data = diagnosticoRepository.obtenerHistorialPorDepartamento(selectedDepartamento);
+                for (Object[] row : data) {
+                    osw.write(escapeCSV(String.valueOf(row[0])) + "," +
+                              escapeCSV(String.valueOf(row[1])) + "," +
+                              escapeCSV(String.valueOf(row[2])) + "," +
+                              escapeCSV(String.valueOf(row[3])) + "," +
+                              escapeCSV(String.valueOf(row[4])) + "," +
+                              escapeCSV(String.valueOf(row[5])) + "," +
+                              escapeCSV(String.valueOf(row[6])) + "\n");
+                }
+            }
+
+            osw.flush();
+            JOptionPane.showMessageDialog(this, 
+                    "Reporte exportado exitosamente en:\n" + fileToSave.getAbsolutePath(), 
+                    "Exportación Exitosa", 
+                    JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (IOException ex) {
+            com.vetsentinel.util.VetLogger.error("Error al exportar reporte a CSV", ex);
+            JOptionPane.showMessageDialog(this, 
+                    "Error al guardar el archivo:\n" + ex.getMessage(), 
+                    "Error de Exportación", 
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String escapeCSV(String value) {
+        if (value == null) {
+            return "";
+        }
+        String clean = value.replace("\"", "\"\"");
+        if (clean.contains(",") || clean.contains("\n") || clean.contains("\r") || clean.contains("\"")) {
+            return "\"" + clean + "\"";
+        }
+        return clean;
     }
 }
