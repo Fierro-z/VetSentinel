@@ -11,6 +11,7 @@ public class DatabaseConfig {
 
     private static final String URL = "jdbc:sqlite:vetsentinel.db";
     private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
+    private final SimpleConnectionPool connectionPool = new SimpleConnectionPool(URL);
 
     public Connection getConnection() throws SQLException {
         Connection con = threadConnection.get();
@@ -31,12 +32,7 @@ public class DatabaseConfig {
             );
         }
 
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("Driver SQLite no encontrado.", e);
-        }
-        return DriverManager.getConnection(URL);
+        return connectionPool.getConnection();
     }
 
     public void iniciarTransaccion() throws SQLException {
