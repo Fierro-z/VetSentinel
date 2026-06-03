@@ -267,11 +267,11 @@ public class VentanaEstado extends VetBaseFrame {
             if (data.length == 0) {
                 JPanel emptyPanel = new JPanel(new GridBagLayout());
                 emptyPanel.setOpaque(false);
-                JLabel emptyLabel = makeLabel("Sin datos registrados para " + selectedDepartamento, FONT_SUBTITLE.deriveFont(Font.ITALIC), () -> textMuted);
+                JLabel emptyLabel = makeLabel("Sin datos", FONT_SUBTITLE.deriveFont(Font.ITALIC), () -> textMuted);
                 emptyPanel.add(emptyLabel);
                 panelDatos.add(emptyPanel, BorderLayout.CENTER);
             } else {
-                String[] cols = {"Fecha", "Propietario", "Dirección", "Mascota", "Especie", "Parásito", "Riesgo"};
+                String[] cols = {"Fecha", "Propietario", "Dirección / Municipio", "Mascota", "Especie", "Parásito", "Riesgo"};
                 JTable table = new JTable(data, cols) {
                     @Override public boolean isCellEditable(int r, int c) { return false; }
                     @Override public Component prepareRenderer(javax.swing.table.TableCellRenderer r, int row, int col) {
@@ -296,9 +296,19 @@ public class VentanaEstado extends VetBaseFrame {
                 table.getTableHeader().setBackground(bgDark);
                 table.getTableHeader().setForeground(accentTeal);
                 
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+                table.getColumnModel().getColumn(0).setPreferredWidth(95);  // Fecha
+                table.getColumnModel().getColumn(1).setPreferredWidth(140); // Propietario
+                table.getColumnModel().getColumn(2).setPreferredWidth(180); // Dirección / Municipio
+                table.getColumnModel().getColumn(3).setPreferredWidth(90);  // Mascota
+                table.getColumnModel().getColumn(4).setPreferredWidth(80);  // Especie
+                table.getColumnModel().getColumn(5).setPreferredWidth(120); // Parásito
+                table.getColumnModel().getColumn(6).setPreferredWidth(130); // Riesgo
+
                 JScrollPane scroll = new JScrollPane(table);
                 scroll.getViewport().setBackground(bgCard);
                 scroll.setBorder(BorderFactory.createLineBorder(borderColor));
+                scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
                 panelDatos.add(scroll, BorderLayout.CENTER);
             }
         }

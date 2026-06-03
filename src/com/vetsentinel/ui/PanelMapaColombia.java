@@ -66,11 +66,13 @@ public class PanelMapaColombia extends JPanel {
         cargarGeoJSON();
         
         MouseAdapter mouseAdapter = new MouseAdapter() {
+            private Point pressStart = null;
             private Point dragStart = null;
 
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
+                    pressStart = e.getPoint();
                     dragStart = e.getPoint();
                 }
             }
@@ -90,14 +92,15 @@ public class PanelMapaColombia extends JPanel {
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
-                    if (dragStart != null) {
-                        double dist = e.getPoint().distance(dragStart);
-                        if (dist < 3 && hoveredDepto != null) {
+                    if (pressStart != null) {
+                        double dist = e.getPoint().distance(pressStart);
+                        if (dist < 5 && hoveredDepto != null) {
                             if (selectionListener != null) {
                                 selectionListener.accept(hoveredDepto);
                             }
                         }
                     }
+                    pressStart = null;
                     dragStart = null;
                 }
             }
