@@ -23,9 +23,9 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
 
     @Override
     public void registrar(int idMascota, int idParasito, String nivelRiesgo) throws SQLException {
-        try (Connection con = dbConfig.getConnection()) {
-            PreparedStatement psDiag = con.prepareStatement(
-                    "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio, nivel_riesgo) VALUES (?,?,date('now'),'Activo',?)");
+        try (Connection con = dbConfig.getConnection();
+             PreparedStatement psDiag = con.prepareStatement(
+                     "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio, nivel_riesgo) VALUES (?,?,date('now'),'Activo',?)")) {
             psDiag.setInt(1, idMascota);
             psDiag.setInt(2, idParasito);
             psDiag.setString(3, nivelRiesgo);

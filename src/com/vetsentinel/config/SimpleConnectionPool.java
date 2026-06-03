@@ -43,6 +43,11 @@ public class SimpleConnectionPool {
                 throw new SQLException("Driver SQLite no encontrado.", e);
             }
             Connection con = DriverManager.getConnection(url);
+            try (java.sql.Statement stmt = con.createStatement()) {
+                stmt.execute("PRAGMA journal_mode = WAL;");
+                stmt.execute("PRAGMA busy_timeout = 5000;");
+                stmt.execute("PRAGMA foreign_keys = ON;");
+            }
             activeConnections.add(con);
             return wrapConnection(con);
         }

@@ -45,6 +45,11 @@ public class DatabaseConfig {
             throw new SQLException("Driver SQLite no encontrado.", e);
         }
         Connection con = DriverManager.getConnection(URL);
+        try (Statement stmt = con.createStatement()) {
+            stmt.execute("PRAGMA journal_mode = WAL;");
+            stmt.execute("PRAGMA busy_timeout = 5000;");
+            stmt.execute("PRAGMA foreign_keys = ON;");
+        }
         con.setAutoCommit(false);
         threadConnection.set(con);
     }
