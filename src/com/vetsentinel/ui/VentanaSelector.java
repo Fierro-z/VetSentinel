@@ -68,7 +68,20 @@ public class VentanaSelector extends VetBaseFrame {
                 if (banner != null) {
                     Graphics2D g2 = (Graphics2D) g;
                     g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                    g2.drawImage(banner, 0, 0, getWidth(), getHeight(), this);
+                    int iw = banner.getWidth(this);
+                    int ih = banner.getHeight(this);
+                    int pw = getWidth();
+                    int ph = getHeight();
+                    if (iw > 0 && ih > 0) {
+                        double scale = Math.max((double) pw / iw, (double) ph / ih);
+                        int nw = (int) (iw * scale);
+                        int nh = (int) (ih * scale);
+                        int x = (pw - nw) / 2;
+                        int y = (ph - nh) / 2;
+                        g2.drawImage(banner, x, y, nw, nh, this);
+                    } else {
+                        g2.drawImage(banner, 0, 0, pw, ph, this);
+                    }
                 } else {
                     g.setColor(accentTeal);
                     g.fillRect(0, 0, getWidth(), getHeight());
