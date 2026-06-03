@@ -133,15 +133,36 @@ public class DatabaseConfig {
             // Limpieza de diagnósticos huérfanos (cuyo parásito fue eliminado)
             stmt.execute("DELETE FROM Diagnosticos WHERE id_parasito NOT IN (SELECT id FROM Parasitos)");
 
+            // Migración: Eliminar contraseñas legacy en texto plano (que no tienen formato 'salt:hash')
+            stmt.execute("DELETE FROM Usuarios WHERE password NOT LIKE '%:%'");
+
             // Semilla de usuarios por defecto
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
             int userCount = rsUsr.next() ? rsUsr.getInt(1) : 0;
             if (userCount == 0) {
-                stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('admin', 'admin123')");
-                stmt.execute("INSERT INTO Usuarios (username, password) VALUES ('estado', 'estado123')");
+                String hashedAdmin = com.vetsentinel.util.PasswordHasher.hash("admin123");
+                String hashedEstado = com.vetsentinel.util.PasswordHasher.hash("estado123");
+                
+                try (PreparedStatement psAdmin = con.prepareStatement("INSERT INTO Usuarios (username, password) VALUES ('admin', ?)")) {
+                    psAdmin.setString(1, hashedAdmin);
+                    psAdmin.executeUpdate();
+                }
+                try (PreparedStatement psEstado = con.prepareStatement("INSERT INTO Usuarios (username, password) VALUES ('estado', ?)")) {
+                    psEstado.setString(1, hashedEstado);
+                    psEstado.executeUpdate();
+                }
             } else {
                 // Asegurar que 'estado' esté registrado por si acaso
-                try { stmt.execute("INSERT OR IGNORE INTO Usuarios (username, password) VALUES ('estado', 'estado123')"); } catch (SQLException ignore) {}
+                try (PreparedStatement psCheck = con.prepareStatement("SELECT COUNT(*) FROM Usuarios WHERE username = 'estado'")) {
+                    ResultSet rsCheck = psCheck.executeQuery();
+                    if (rsCheck.next() && rsCheck.getInt(1) == 0) {
+                        String hashedEstado = com.vetsentinel.util.PasswordHasher.hash("estado123");
+                        try (PreparedStatement psEstado = con.prepareStatement("INSERT INTO Usuarios (username, password) VALUES ('estado', ?)")) {
+                            psEstado.setString(1, hashedEstado);
+                            psEstado.executeUpdate();
+                        }
+                    }
+                }
             }
 
         } catch (SQLException e) {
