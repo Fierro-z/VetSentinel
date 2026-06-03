@@ -65,13 +65,7 @@ public class VentanaCiudadana extends VetBaseFrame {
         headerPanel.setPreferredSize(new Dimension(getWidth(), 180));
         
         JPanel imageContainer = new JPanel() {
-            private Image banner;
-            {
-                try {
-                    ImageIcon icon = new ImageIcon("resources/img/bannerProyecto.png");
-                    banner = icon.getImage();
-                } catch (Exception e) { System.out.println("Imagen no encontrada."); }
-            }
+            private Image banner = VetBaseFrame.getBannerImage();
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);

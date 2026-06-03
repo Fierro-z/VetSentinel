@@ -22,13 +22,14 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
     }
 
     @Override
-    public void registrar(int idMascota, int idParasito, String nivelRiesgo) throws SQLException {
+    public void registrar(int idMascota, int idParasito, String nivelRiesgo, String reporte) throws SQLException {
         try (Connection con = dbConfig.getConnection();
              PreparedStatement psDiag = con.prepareStatement(
-                     "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio, nivel_riesgo) VALUES (?,?,date('now'),'Activo',?)")) {
+                      "INSERT INTO Diagnosticos (id_mascota, id_parasito, fecha, estado_contagio, nivel_riesgo, reporte) VALUES (?,?,date('now'),'Activo',?,?)")) {
             psDiag.setInt(1, idMascota);
             psDiag.setInt(2, idParasito);
             psDiag.setString(3, nivelRiesgo);
+            psDiag.setString(4, reporte);
             psDiag.executeUpdate();
         }
     }
@@ -37,7 +38,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
     public Object[][] obtenerHistorial() {
         try (Connection con = dbConfig.getConnection()) {
             String sql =
-                    "SELECT d.fecha, d.nivel_riesgo, " +
+                    "SELECT d.fecha, d.nivel_riesgo, d.reporte, " +
                             "m.nombre AS mascota, m.especie, " +
                             "p.nombre AS propietario, p.cedula, p.direccion, p.departamento, " +
                             "par.nombre AS parasito " +
@@ -60,7 +61,8 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
                         (rs.getString("direccion") != null ? rs.getString("direccion") : "-") + " (" + (rs.getString("departamento") != null ? rs.getString("departamento") : "") + ")",
                         rs.getString("mascota"),
                         rs.getString("especie"),
-                        rs.getString("parasito")
+                        rs.getString("parasito"),
+                        rs.getString("reporte") != null ? rs.getString("reporte") : ""
                 });
             }
             return rows.toArray(new Object[0][]);
@@ -203,7 +205,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
     }
 
     @Override
-    public void registrarCasoCompleto(com.vetsentinel.model.Propietario propietario, com.vetsentinel.model.Mascota mascota, int idParasito, String nivelRiesgo) throws SQLException {
+    public void registrarCasoCompleto(com.vetsentinel.model.Propietario propietario, com.vetsentinel.model.Mascota mascota, int idParasito, String nivelRiesgo, String reporte) throws SQLException {
         dbConfig.iniciarTransaccion();
         try {
             SQLitePropietarioRepository propRepo = new SQLitePropietarioRepository(dbConfig);
@@ -213,7 +215,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
             SQLiteMascotaRepository mascRepo = new SQLiteMascotaRepository(dbConfig);
             int idMasc = mascRepo.upsert(mascota);
             
-            registrar(idMasc, idParasito, nivelRiesgo);
+            registrar(idMasc, idParasito, nivelRiesgo, reporte);
             
             dbConfig.commitTransaccion();
         } catch (Exception e) {

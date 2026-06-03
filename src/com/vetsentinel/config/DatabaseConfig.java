@@ -131,8 +131,15 @@ public class DatabaseConfig {
                     "username TEXT UNIQUE NOT NULL," +
                     "password TEXT NOT NULL)");
 
+            // Índices de optimización de consultas
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_propietarios_departamento ON Propietarios(departamento)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_mascotas_propietario ON Mascotas(id_propietario)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_diagnosticos_mascota ON Diagnosticos(id_mascota)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_diagnosticos_parasito ON Diagnosticos(id_parasito)");
+
             // Intentos seguros de migración
             try { stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT"); } catch (SQLException ignore) {}
+            try { stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN reporte TEXT"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_embarazo INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Parasitos ADD COLUMN alerta_ninos INTEGER DEFAULT 0"); } catch (SQLException ignore) {}

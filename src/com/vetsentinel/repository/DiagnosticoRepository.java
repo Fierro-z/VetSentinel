@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 public interface DiagnosticoRepository {
-    void registrar(int idMascota, int idParasito, String nivelRiesgo) throws SQLException;
-    void registrarCasoCompleto(com.vetsentinel.model.Propietario propietario, com.vetsentinel.model.Mascota mascota, int idParasito, String nivelRiesgo) throws SQLException;
+    void registrar(int idMascota, int idParasito, String nivelRiesgo, String reporte) throws SQLException;
+    void registrarCasoCompleto(com.vetsentinel.model.Propietario propietario, com.vetsentinel.model.Mascota mascota, int idParasito, String nivelRiesgo, String reporte) throws SQLException;
     Object[][] obtenerHistorial();
     Object[][] obtenerHistorialPorDepartamento(String departamento);
     Map<String, String> obtenerRiesgoPorDepartamento();

@@ -16,6 +16,11 @@ public class Main {
         DatabaseConfig dbConfig = new DatabaseConfig();
         dbConfig.inicializarBD();
 
+        // Pre-cargar la base cartográfica del mapa de forma asíncrona
+        new Thread(() -> {
+            com.vetsentinel.ui.PanelMapaColombia.preCargarMapa();
+        }).start();
+
         // 2. Instanciar repositorios concretos
         PropietarioRepository propietarioRepo = new SQLitePropietarioRepository(dbConfig);
         MascotaRepository mascotaRepo = new SQLiteMascotaRepository(dbConfig);

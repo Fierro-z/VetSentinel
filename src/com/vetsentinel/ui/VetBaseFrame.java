@@ -13,6 +13,21 @@ import java.util.function.Supplier;
 public abstract class VetBaseFrame extends JFrame {
 
     protected static boolean isDarkMode = false;
+    private boolean localDarkMode = false;
+    private static Image cachedBanner = null;
+
+    public static synchronized Image getBannerImage() {
+        if (cachedBanner == null) {
+            try {
+                ImageIcon icon = new ImageIcon("resources/img/bannerProyecto.png");
+                cachedBanner = icon.getImage();
+            } catch (Exception e) {
+                System.out.println("Imagen no encontrada.");
+            }
+        }
+        return cachedBanner;
+    }
+
     protected List<Runnable> updaters = new ArrayList<>();
 
     // ── Paleta de colores Dinámica ─────────────────────────────────────────────
@@ -36,6 +51,7 @@ public abstract class VetBaseFrame extends JFrame {
 
     public VetBaseFrame(String title) {
         super(title);
+        localDarkMode = isDarkMode;
         aplicarColores(isDarkMode);
     }
 
@@ -71,6 +87,7 @@ public abstract class VetBaseFrame extends JFrame {
 
     protected void alternarTema() {
         isDarkMode = !isDarkMode;
+        localDarkMode = isDarkMode;
         aplicarColores(isDarkMode);
         
         getContentPane().setBackground(bgDark);
@@ -81,6 +98,21 @@ public abstract class VetBaseFrame extends JFrame {
         
         SwingUtilities.updateComponentTreeUI(this);
         repaint();
+    }
+
+    @Override
+    public void setVisible(boolean b) {
+        if (b && localDarkMode != isDarkMode) {
+            localDarkMode = isDarkMode;
+            aplicarColores(isDarkMode);
+            getContentPane().setBackground(bgDark);
+            for (Runnable r : updaters) {
+                r.run();
+            }
+            SwingUtilities.updateComponentTreeUI(this);
+            repaint();
+        }
+        super.setVisible(b);
     }
 
     protected JTextField createTextField(String placeholder) {

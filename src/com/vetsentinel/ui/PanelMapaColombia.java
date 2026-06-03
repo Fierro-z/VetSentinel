@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
+import java.awt.geom.AffineTransform;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -30,7 +31,7 @@ public class PanelMapaColombia extends JPanel {
 
     private static class DepartamentoGeo {
         String name;
-        List<List<Point2D>> rings = new ArrayList<>();
+        List<Path2D.Double> rawPaths = new ArrayList<>();
     }
 
     private static class Point2D {
@@ -54,6 +55,23 @@ public class PanelMapaColombia extends JPanel {
     
     // Cache of screen shapes for drawing and hit testing
     private final Map<String, List<Path2D.Double>> screenShapes = new HashMap<>();
+
+    private int lastW = -1;
+    private int lastH = -1;
+    private double lastZoom = -1.0;
+    private double lastPanX = -1.0;
+    private double lastPanY = -1.0;
+
+    private static List<DepartamentoGeo> cachedDepartamentos = null;
+    private static final Object cacheLock = new Object();
+
+    public static void preCargarMapa() {
+        synchronized (cacheLock) {
+            if (cachedDepartamentos == null) {
+                cachedDepartamentos = cargarGeoJSONInternal();
+            }
+        }
+    }
 
     private java.util.function.Consumer<String> selectionListener = null;
 
@@ -194,18 +212,31 @@ public class PanelMapaColombia extends JPanel {
     }
 
     private void cargarGeoJSON() {
+        synchronized (cacheLock) {
+            if (cachedDepartamentos == null) {
+                cachedDepartamentos = cargarGeoJSONInternal();
+            }
+            this.departamentos.clear();
+            if (cachedDepartamentos != null) {
+                this.departamentos.addAll(cachedDepartamentos);
+            }
+        }
+    }
+
+    private static List<DepartamentoGeo> cargarGeoJSONInternal() {
+        List<DepartamentoGeo> list = new ArrayList<>();
         try {
             String pathStr = "resources/map/co.json";
             if (!Files.exists(Paths.get(pathStr))) {
                 System.out.println("Archivo co.json no encontrado en: " + pathStr);
-                return;
+                return list;
             }
             String json = new String(Files.readAllBytes(Paths.get(pathStr)), java.nio.charset.StandardCharsets.UTF_8);
             
             int featuresIdx = json.indexOf("\"features\"");
-            if (featuresIdx == -1) return;
+            if (featuresIdx == -1) return list;
             int startArray = json.indexOf("[", featuresIdx);
-            if (startArray == -1) return;
+            if (startArray == -1) return list;
             
             int len = json.length();
             int pos = startArray + 1;
@@ -228,7 +259,7 @@ public class PanelMapaColombia extends JPanel {
                     } else if (c == '}') {
                         bracketCount--;
                         if (bracketCount == 0) {
-                            parseFeature(featureSb.toString());
+                            parseFeatureInternal(featureSb.toString(), list);
                         }
                     }
                 }
@@ -237,9 +268,10 @@ public class PanelMapaColombia extends JPanel {
         } catch (IOException e) {
             com.vetsentinel.util.VetLogger.error("Error al cargar co.json", e);
         }
+        return list;
     }
 
-    private void parseFeature(String featureStr) {
+    private static void parseFeatureInternal(String featureStr, List<DepartamentoGeo> list) {
         Pattern namePattern = Pattern.compile("\"name\"\\s*:\\s*\"([^\"]+)\"");
         Matcher nameMatcher = namePattern.matcher(featureStr);
         String name = "";
@@ -261,10 +293,26 @@ public class PanelMapaColombia extends JPanel {
         DepartamentoGeo depto = new DepartamentoGeo();
         depto.name = name;
         
-        extractRings(parsedArray, depto.rings);
+        List<List<Point2D>> rings = new ArrayList<>();
+        extractRings(parsedArray, rings);
         
-        if (!depto.rings.isEmpty()) {
-            departamentos.add(depto);
+        for (List<Point2D> ring : rings) {
+            Path2D.Double path = new Path2D.Double();
+            boolean first = true;
+            for (Point2D pt : ring) {
+                if (first) {
+                    path.moveTo(pt.lon, pt.lat);
+                    first = false;
+                } else {
+                    path.lineTo(pt.lon, pt.lat);
+                }
+            }
+            path.closePath();
+            depto.rawPaths.add(path);
+        }
+        
+        if (!depto.rawPaths.isEmpty()) {
+            list.add(depto);
         }
     }
 
@@ -295,7 +343,7 @@ public class PanelMapaColombia extends JPanel {
 
     // Dynamic ring extractor that supports deep coordinates nesting for both Polygon and MultiPolygon
     @SuppressWarnings("unchecked")
-    private void extractRings(List<Object> array, List<List<Point2D>> targetRings) {
+    private static void extractRings(List<Object> array, List<List<Point2D>> targetRings) {
         if (array.isEmpty()) return;
         
         Object first = array.get(0);
@@ -333,44 +381,53 @@ public class PanelMapaColombia extends JPanel {
         int w = getWidth();
         int h = getHeight();
 
-        double centerX = w / 2.0;
-        double centerY = h / 2.0;
+        boolean sizeChanged = (w != lastW || h != lastH);
+        boolean transformChanged = (zoomFactor != lastZoom || panX != lastPanX || panY != lastPanY);
 
-        double mapCenterX = (MIN_LON + MAX_LON) / 2.0;
-        double mapCenterY = (MIN_LAT + MAX_LAT) / 2.0;
+        if (sizeChanged || transformChanged || screenShapes.isEmpty()) {
+            lastW = w;
+            lastH = h;
+            lastZoom = zoomFactor;
+            lastPanX = panX;
+            lastPanY = panY;
 
-        // Base scale to fit screen
-        double scaleX = w / (MAX_LON - MIN_LON);
-        double scaleY = h / (MAX_LAT - MIN_LAT);
-        double scale = Math.min(scaleX, scaleY) * 0.95;
+            double centerX = w / 2.0;
+            double centerY = h / 2.0;
 
-        screenShapes.clear();
+            double mapCenterX = (MIN_LON + MAX_LON) / 2.0;
+            double mapCenterY = (MIN_LAT + MAX_LAT) / 2.0;
 
-        // Project and render coordinates
-        for (DepartamentoGeo depto : departamentos) {
-            List<Path2D.Double> paths = new ArrayList<>();
-            for (List<Point2D> ring : depto.rings) {
-                Path2D.Double path = new Path2D.Double();
-                boolean first = true;
-                for (Point2D pt : ring) {
-                    double rx = (pt.lon - mapCenterX) * scale;
-                    double ry = (mapCenterY - pt.lat) * scale;
+            // Base scale to fit screen
+            double scaleX = w / (MAX_LON - MIN_LON);
+            double scaleY = h / (MAX_LAT - MIN_LAT);
+            double scale = Math.min(scaleX, scaleY) * 0.95;
 
-                    // Apply zoom and pan translation relative to screen center
-                    double sx = centerX + panX + rx * zoomFactor;
-                    double sy = centerY + panY + ry * zoomFactor;
+            // Build the transformation matrix:
+            // sx = scale * zoom * lon + centerX + panX - mapCenterX * scale * zoom
+            // sy = -scale * zoom * lat + centerY + panY + mapCenterY * scale * zoom
+            double m00 = scale * zoomFactor;
+            double m02 = centerX + panX - mapCenterX * scale * zoomFactor;
+            double m11 = -scale * zoomFactor;
+            double m12 = centerY + panY + mapCenterY * scale * zoomFactor;
 
-                    if (first) {
-                        path.moveTo(sx, sy);
-                        first = false;
-                    } else {
-                        path.lineTo(sx, sy);
-                    }
+            AffineTransform tx = new AffineTransform(m00, 0, 0, m11, m02, m12);
+
+            screenShapes.clear();
+
+            for (DepartamentoGeo depto : departamentos) {
+                List<Path2D.Double> paths = new ArrayList<>();
+                for (Path2D.Double rawPath : depto.rawPaths) {
+                    Path2D.Double screenPath = (Path2D.Double) rawPath.createTransformedShape(tx);
+                    paths.add(screenPath);
                 }
-                path.closePath();
-                paths.add(path);
+                screenShapes.put(depto.name, paths);
             }
-            screenShapes.put(depto.name, paths);
+        }
+
+        // Project and render coordinates using cached screenShapes
+        for (DepartamentoGeo depto : departamentos) {
+            List<Path2D.Double> paths = screenShapes.get(depto.name);
+            if (paths == null) continue;
 
             // Fetch sqlite risks
             String normName = normalizarNombre(depto.name);

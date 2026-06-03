@@ -99,13 +99,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         headerPanel.setPreferredSize(new Dimension(getWidth(), 180));
         
         JPanel imageContainer = new JPanel() {
-            private Image banner;
-            {
-                try {
-                    ImageIcon icon = new ImageIcon("resources/img/bannerProyecto.png");
-                    banner = icon.getImage();
-                } catch (Exception e) { System.out.println("Imagen no encontrada."); }
-            }
+            private Image banner = VetBaseFrame.getBannerImage();
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -766,7 +760,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
         
         try {
-            diagnosticoRepository.registrarCasoCompleto(propietario, mascota, selectedParasito.getId(), nivelBD);
+            diagnosticoRepository.registrarCasoCompleto(propietario, mascota, selectedParasito.getId(), nivelBD, alerta);
         } catch (java.sql.SQLException ex) {
             showStyledDialog("Error al guardar en BD", ex.getMessage(), JOptionPane.ERROR_MESSAGE);
         }
@@ -867,9 +861,80 @@ public class VentanaVeterinaria extends VetBaseFrame {
         dialogPanel.add(dlgHeader, BorderLayout.NORTH);
         dialogPanel.add(scroll,    BorderLayout.CENTER);
 
+        JButton btnVerReporte = createButton("📄 Ver Reporte de Riesgo", () -> accentTeal);
+        btnVerReporte.setEnabled(false);
+        btnVerReporte.setPreferredSize(new Dimension(200, 36));
+
+        table.getSelectionModel().addListSelectionListener(event -> {
+            btnVerReporte.setEnabled(table.getSelectedRow() != -1);
+        });
+
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.getSelectedRow();
+                    if (row != -1 && row < data.length) {
+                        String reporte = (String) data[row][8];
+                        mostrarReporteDetalle(reporte);
+                    }
+                }
+            }
+        });
+
+        btnVerReporte.addActionListener(event -> {
+            int row = table.getSelectedRow();
+            if (row != -1 && row < data.length) {
+                String reporte = (String) data[row][8];
+                mostrarReporteDetalle(reporte);
+            }
+        });
+
+        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        footerPanel.setOpaque(false);
+        footerPanel.add(btnVerReporte);
+        dialogPanel.add(footerPanel, BorderLayout.SOUTH);
+
         JOptionPane pane = new JOptionPane(dialogPanel,
                 JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION);
         JDialog dialog = pane.createDialog(this, "VetSentinel — Historial");
+        dialog.getContentPane().setBackground(bgPanel);
+        dialog.setBackground(bgPanel);
+        dialog.setVisible(true);
+    }
+
+    private void mostrarReporteDetalle(String reporte) {
+        if (reporte == null || reporte.trim().isEmpty()) {
+            showStyledDialog("Reporte", "No hay reporte detallado guardado para este diagnóstico.", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JTextArea area = new JTextArea(reporte);
+        area.setEditable(false);
+        area.setOpaque(false);
+        area.setFont(FONT_MONO);
+        area.setForeground(textPrimary);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setBorder(null);
+
+        JScrollPane scroll = new JScrollPane(area);
+        scroll.setPreferredSize(new Dimension(550, 420));
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setBorder(null);
+        styleScrollBar(scroll);
+
+        JPanel panel = new JPanel(new BorderLayout(0, 15));
+        panel.setBackground(bgPanel);
+        panel.setBorder(new EmptyBorder(16, 16, 16, 16));
+
+        JLabel title = makeLabel("Reporte de Riesgo Guardado", FONT_TITLE, () -> accentTeal);
+        panel.add(title, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+
+        JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION);
+        JDialog dialog = pane.createDialog(this, "VetSentinel — Reporte Detallado");
         dialog.getContentPane().setBackground(bgPanel);
         dialog.setBackground(bgPanel);
         dialog.setVisible(true);
