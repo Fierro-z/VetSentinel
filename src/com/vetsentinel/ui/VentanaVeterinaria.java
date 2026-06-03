@@ -53,6 +53,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
     private final DiagnosticoRepository diagnosticoRepository;
     private final AuthenticationService authenticationService;
     private final RiskAssessmentService riskAssessmentService;
+    private final Runnable onVolver;
 
     private static final String[] DEPARTAMENTOS = {
         "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", 
@@ -66,7 +67,8 @@ public class VentanaVeterinaria extends VetBaseFrame {
                               ParasitoRepository parasitoRepository,
                               DiagnosticoRepository diagnosticoRepository,
                               AuthenticationService authenticationService,
-                              RiskAssessmentService riskAssessmentService) {
+                              RiskAssessmentService riskAssessmentService,
+                              Runnable onVolver) {
         super("VetSentinel — Módulo Clínico Veterinario");
         this.propietarioRepository = propietarioRepository;
         this.mascotaRepository = mascotaRepository;
@@ -74,13 +76,61 @@ public class VentanaVeterinaria extends VetBaseFrame {
         this.diagnosticoRepository = diagnosticoRepository;
         this.authenticationService = authenticationService;
         this.riskAssessmentService = riskAssessmentService;
+        this.onVolver = onVolver;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         root = new JPanel(new BorderLayout(0, 0));
         root.setBackground(bgDark);
 
-        root.add(buildHeader(), BorderLayout.NORTH);
+        JPanel header = crearHeaderPanel();
+        header.setLayout(new BorderLayout());
+        
+        JButton btnVolverTop = new JButton("← Volver") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                Color baseBg = isDarkMode ? new Color(255, 255, 255, 30) : new Color(0, 0, 0, 20);
+                if (getModel().isPressed()) {
+                    baseBg = isDarkMode ? new Color(255, 255, 255, 15) : new Color(0, 0, 0, 40);
+                } else if (getModel().isRollover()) {
+                    baseBg = isDarkMode ? new Color(255, 255, 255, 50) : new Color(0, 0, 0, 10);
+                }
+                
+                g2.setColor(baseBg);
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 8, 8));
+                
+                g2.setColor(isDarkMode ? new Color(226, 232, 240) : new Color(71, 85, 105));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(getText(), x, y);
+                g2.dispose();
+            }
+        };
+        btnVolverTop.setContentAreaFilled(false);
+        btnVolverTop.setBorderPainted(false);
+        btnVolverTop.setFocusPainted(false);
+        btnVolverTop.setPreferredSize(new Dimension(85, 28));
+        btnVolverTop.setMinimumSize(new Dimension(85, 28));
+        btnVolverTop.setMaximumSize(new Dimension(85, 28));
+        btnVolverTop.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVolverTop.addActionListener(e -> {
+            if (onVolver != null) {
+                onVolver.run();
+            }
+            dispose();
+        });
+
+        JPanel compactoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        compactoPanel.setOpaque(false);
+        compactoPanel.add(btnVolverTop);
+        
+        header.add(compactoPanel, BorderLayout.WEST);
+        root.add(header, BorderLayout.NORTH);
+
         root.add(buildCenter(), BorderLayout.CENTER);
 
         setContentPane(root);
@@ -92,80 +142,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
         wireListeners();
         resetAlertPanel();
         realizarFadeIn();
-    }
-
-    private JPanel buildHeader() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setPreferredSize(new Dimension(getWidth(), 180));
-        
-        JPanel imageContainer = new JPanel() {
-            private Image banner = VetBaseFrame.getBannerImage();
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                g.setColor(bgDark);
-                g.fillRect(0, 0, getWidth(), getHeight());
-                if (banner != null) {
-                    Graphics2D g2 = (Graphics2D) g;
-                    g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                    int iw = banner.getWidth(this);
-                    int ih = banner.getHeight(this);
-                    int pw = getWidth();
-                    int ph = getHeight();
-                    if (iw > 0 && ih > 0) {
-                        double scale = Math.min((double) pw / iw, (double) ph / ih);
-                        int nw = (int) (iw * scale);
-                        int nh = (int) (ih * scale);
-                        int x = (pw - nw) / 2;
-                        int y = (ph - nh) / 2;
-                        g2.drawImage(banner, x, y, nw, nh, this);
-                    } else {
-                        g2.drawImage(banner, 0, 0, pw, ph, this);
-                    }
-                }
-            }
-        };
-        imageContainer.setLayout(new BorderLayout());
-        imageContainer.setBorder(new EmptyBorder(15, 25, 15, 25));
-
-        JPanel topLeftRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        topLeftRow.setOpaque(false);
-
-        JButton btnVolverTop = new JButton() {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(isDarkMode ? new Color(30, 41, 55, 220) : new Color(255, 255, 255, 220));
-                if (getModel().isRollover()) g2.setColor(isDarkMode ? new Color(45, 60, 80, 255) : new Color(235, 240, 245, 255));
-                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
-                g2.setColor(borderColor);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
-                g2.setColor(textPrimary);
-                g2.setFont(FONT_BTN);
-                FontMetrics fm = g2.getFontMetrics();
-                String text = "⬅ Volver";
-                int x = (getWidth() - fm.stringWidth(text)) / 2;
-                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
-                g2.drawString(text, x, y);
-                g2.dispose();
-            }
-        };
-        updaters.add(btnVolverTop::repaint);
-        btnVolverTop.setPreferredSize(new Dimension(85, 30));
-        btnVolverTop.setContentAreaFilled(false);
-        btnVolverTop.setBorderPainted(false);
-        btnVolverTop.setFocusPainted(false);
-        btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnVolverTop.addActionListener(e -> { 
-            this.dispose(); 
-            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, false).setVisible(true); 
-        });
-
-        topLeftRow.add(btnVolverTop);
-        imageContainer.add(topLeftRow, BorderLayout.NORTH);
-
-        headerPanel.add(imageContainer, BorderLayout.CENTER);
-        return headerPanel;
     }
 
     private JPanel buildCenter() {

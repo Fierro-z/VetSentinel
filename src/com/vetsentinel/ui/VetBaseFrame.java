@@ -9,6 +9,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import java.io.File;
 
 public abstract class VetBaseFrame extends JFrame {
 
@@ -18,10 +19,24 @@ public abstract class VetBaseFrame extends JFrame {
     public static synchronized Image getBannerImage() {
         if (cachedBanner == null) {
             try {
-                ImageIcon icon = new ImageIcon("resources/img/bannerProyecto.png");
-                cachedBanner = icon.getImage();
+                File file = new File("resources/img/bannerProyecto.png");
+                if (file.exists()) {
+                    ImageIcon icon = new ImageIcon(file.getAbsolutePath());
+                    if (icon.getImageLoadStatus() == MediaTracker.ERRORED) {
+                        System.out.println("Error al cargar la imagen desde la ruta: " + file.getAbsolutePath());
+                    } else {
+                        cachedBanner = icon.getImage();
+                    }
+                } else {
+                     ImageIcon icon = new ImageIcon(VetBaseFrame.class.getResource("/img/bannerProyecto.png"));
+                     if (icon != null && icon.getImageLoadStatus() != MediaTracker.ERRORED) {
+                         cachedBanner = icon.getImage();
+                     } else {
+                          System.out.println("Imagen no encontrada ni en la ruta absoluta ni en el classpath.");
+                     }
+                }
             } catch (Exception e) {
-                System.out.println("Imagen no encontrada.");
+                System.out.println("Excepción al intentar cargar la imagen: " + e.getMessage());
             }
         }
         return cachedBanner;
@@ -29,28 +44,84 @@ public abstract class VetBaseFrame extends JFrame {
 
     protected List<Runnable> updaters = new ArrayList<>();
 
-    // ── Paleta de colores Dinámica ─────────────────────────────────────────────
-    protected Color bgDark;
-    protected Color bgPanel;
-    protected Color bgCard;
-    protected Color bgInput;
-    protected Color accentTeal;
-    protected Color accentBlue;
-    protected Color dangerRed;
-    protected Color warnOrange;
-    protected Color okGreen;
-    protected Color textPrimary;
-    protected Color textMuted;
-    protected Color borderColor;
-
-    // ── Tipografía (base) ─────────────────────────────────────────────────────────────
-    protected static final Font FONT_LABEL   = new Font("SansSerif", Font.PLAIN, 12);
-    protected static final Font FONT_INPUT   = new Font("SansSerif", Font.PLAIN, 13);
-    protected static final Font FONT_BTN     = new Font("SansSerif", Font.BOLD,  12);
+    protected Color bgDark, bgPanel, bgCard, bgInput, accentTeal, accentBlue, dangerRed, warnOrange, okGreen, textPrimary, textMuted, borderColor;
+    protected static final Font FONT_LABEL = new Font("SansSerif", Font.PLAIN, 12);
+    protected static final Font FONT_INPUT = new Font("SansSerif", Font.PLAIN, 13);
+    protected static final Font FONT_BTN = new Font("SansSerif", Font.BOLD, 12);
 
     public VetBaseFrame(String title) {
         super(title);
         aplicarColores(isDarkMode);
+    }
+
+    protected JPanel crearHeaderPanel() {
+        JPanel header = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Image banner = getBannerImage();
+                if (banner != null) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    int panelWidth = getWidth();
+                    int panelHeight = getHeight();
+                    int imgWidth = banner.getWidth(this);
+                    int imgHeight = banner.getHeight(this);
+                    if (imgWidth > 0 && imgHeight > 0) {
+                        double scale = Math.max((double) panelWidth / imgWidth, (double) panelHeight / imgHeight);
+                        int newWidth = (int) (imgWidth * scale);
+                        int newHeight = (int) (imgHeight * scale);
+                        int x = (panelWidth - newWidth) / 2;
+                        int y = (panelHeight - newHeight) / 2;
+                        g2.drawImage(banner, x, y, newWidth, newHeight, this);
+                    }
+                    g2.dispose();
+                } else {
+                    g.setColor(bgPanel);
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+            }
+        };
+        header.setPreferredSize(new Dimension(0, 160));
+        header.setOpaque(false);
+        return header;
+    }
+    
+    protected JButton crearBotonVolver(Runnable accion) {
+        JButton btn = new JButton("← Volver") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                Color baseColor = isDarkMode ? new Color(45, 55, 72) : new Color(226, 232, 240);
+                Color fill = getModel().isPressed() 
+                        ? baseColor.darker() 
+                        : getModel().isRollover() ? baseColor.brighter() : baseColor;
+                
+                g2.setColor(fill);
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 6, 6));
+                
+                g2.setColor(isDarkMode ? new Color(203, 213, 225) : new Color(71, 85, 105));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(getText(), x, y);
+                g2.dispose();
+            }
+        };
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addActionListener(e -> {
+            dispose();
+            accion.run();
+        });
+        updaters.add(btn::repaint);
+        return btn;
     }
 
     protected void aplicarColores(boolean oscuro) {
@@ -86,21 +157,16 @@ public abstract class VetBaseFrame extends JFrame {
     protected void alternarTema() {
         isDarkMode = !isDarkMode;
         aplicarColores(isDarkMode);
-        
         getContentPane().setBackground(bgDark);
-        
         for (Runnable r : updaters) {
             r.run();
         }
-        
         SwingUtilities.updateComponentTreeUI(this);
         repaint();
     }
 
     @Override
     public void setVisible(boolean b) {
-        // La lógica de esta sobrecarga ya no es necesaria, 
-        // pero se mantiene para evitar romper la cadena de llamadas si se extiende.
         super.setVisible(b);
     }
 
@@ -130,17 +196,16 @@ public abstract class VetBaseFrame extends JFrame {
             tf.setFont(FONT_INPUT);
             if (!tf.isFocusOwner()) {
                 tf.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(borderColor),
-                    new EmptyBorder(8, 12, 8, 12)));
+                        BorderFactory.createLineBorder(borderColor),
+                        new EmptyBorder(8, 12, 8, 12)));
             } else {
                 tf.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(accentTeal),
-                    new EmptyBorder(8, 12, 8, 12)));
+                        BorderFactory.createLineBorder(accentTeal),
+                        new EmptyBorder(8, 12, 8, 12)));
             }
         };
         updater.run();
         updaters.add(updater);
-        
         tf.addFocusListener(new FocusAdapter() {
             @Override public void focusGained(FocusEvent e) { updater.run(); tf.repaint(); }
             @Override public void focusLost(FocusEvent e) { updater.run(); tf.repaint(); }
@@ -171,7 +236,7 @@ public abstract class VetBaseFrame extends JFrame {
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setPreferredSize(new Dimension(0, 42));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         updaters.add(btn::repaint);
         return btn;
     }
@@ -188,7 +253,6 @@ public abstract class VetBaseFrame extends JFrame {
         final JComponent glass = (JComponent) getGlassPane();
         glass.setLayout(new BorderLayout());
         glass.setVisible(true);
-        
         JPanel fadePanel = new JPanel() {
             private float alpha = 1.0f;
             private Timer timer;
@@ -216,7 +280,6 @@ public abstract class VetBaseFrame extends JFrame {
                 g2.dispose();
             }
         };
-        
         glass.removeAll();
         glass.add(fadePanel, BorderLayout.CENTER);
         glass.revalidate();
