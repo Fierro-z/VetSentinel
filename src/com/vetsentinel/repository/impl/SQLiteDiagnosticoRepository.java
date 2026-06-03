@@ -201,4 +201,28 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
             return new Object[0][];
         }
     }
+
+    @Override
+    public void registrarCasoCompleto(com.vetsentinel.model.Propietario propietario, com.vetsentinel.model.Mascota mascota, int idParasito, String nivelRiesgo) throws SQLException {
+        dbConfig.iniciarTransaccion();
+        try {
+            SQLitePropietarioRepository propRepo = new SQLitePropietarioRepository(dbConfig);
+            int idProp = propRepo.upsert(propietario);
+            
+            mascota.getPropietario().setId(idProp);
+            SQLiteMascotaRepository mascRepo = new SQLiteMascotaRepository(dbConfig);
+            int idMasc = mascRepo.upsert(mascota);
+            
+            registrar(idMasc, idParasito, nivelRiesgo);
+            
+            dbConfig.commitTransaccion();
+        } catch (Exception e) {
+            dbConfig.rollbackTransaccion();
+            if (e instanceof SQLException) {
+                throw (SQLException) e;
+            } else {
+                throw new SQLException("Error en la transacción del registro del caso clínico.", e);
+            }
+        }
+    }
 }

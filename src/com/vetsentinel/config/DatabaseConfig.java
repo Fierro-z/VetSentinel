@@ -10,14 +10,76 @@ import java.sql.Statement;
 public class DatabaseConfig {
 
     private static final String URL = "jdbc:sqlite:vetsentinel.db";
+    private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
 
     public Connection getConnection() throws SQLException {
+        Connection con = threadConnection.get();
+        if (con != null && !con.isClosed()) {
+            return (Connection) java.lang.reflect.Proxy.newProxyInstance(
+                Connection.class.getClassLoader(),
+                new Class<?>[]{Connection.class},
+                (proxy, method, methodArgs) -> {
+                    if (method.getName().equals("close")) {
+                        return null; // Ignore close during transaction
+                    }
+                    try {
+                        return method.invoke(con, methodArgs);
+                    } catch (java.lang.reflect.InvocationTargetException e) {
+                        throw e.getCause();
+                    }
+                }
+            );
+        }
+
         try {
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
             throw new SQLException("Driver SQLite no encontrado.", e);
         }
         return DriverManager.getConnection(URL);
+    }
+
+    public void iniciarTransaccion() throws SQLException {
+        if (threadConnection.get() != null) {
+            throw new SQLException("Una transacción ya está activa en este hilo.");
+        }
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("Driver SQLite no encontrado.", e);
+        }
+        Connection con = DriverManager.getConnection(URL);
+        con.setAutoCommit(false);
+        threadConnection.set(con);
+    }
+
+    public void commitTransaccion() throws SQLException {
+        Connection con = threadConnection.get();
+        if (con == null) {
+            throw new SQLException("No hay ninguna transacción activa.");
+        }
+        try {
+            con.commit();
+        } finally {
+            try { con.setAutoCommit(true); } catch (SQLException ignore) {}
+            try { con.close(); } catch (SQLException ignore) {}
+            threadConnection.remove();
+        }
+    }
+
+    public void rollbackTransaccion() {
+        Connection con = threadConnection.get();
+        if (con != null) {
+            try {
+                con.rollback();
+            } catch (SQLException e) {
+                System.err.println("Error al hacer rollback: " + e.getMessage());
+            } finally {
+                try { con.setAutoCommit(true); } catch (SQLException ignore) {}
+                try { con.close(); } catch (SQLException ignore) {}
+                threadConnection.remove();
+            }
+        }
     }
 
     public void inicializarBD() {

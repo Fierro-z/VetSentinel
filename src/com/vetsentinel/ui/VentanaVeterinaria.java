@@ -645,14 +645,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
         
         try {
-            int idProp = propietarioRepository.upsert(propietario);
-            propietario.setId(idProp);
-            mascota.getPropietario().setId(idProp);
-            
-            int idMasc = mascotaRepository.upsert(mascota);
-            mascota.setId(idMasc);
-            
-            diagnosticoRepository.registrar(idMasc, selectedParasito.getId(), nivelBD);
+            diagnosticoRepository.registrarCasoCompleto(propietario, mascota, selectedParasito.getId(), nivelBD);
         } catch (java.sql.SQLException ex) {
             showStyledDialog("Error al guardar en BD", ex.getMessage(), JOptionPane.ERROR_MESSAGE);
         }
