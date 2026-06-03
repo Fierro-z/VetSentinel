@@ -108,6 +108,8 @@ public class VentanaVeterinaria extends VetBaseFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
+                g.setColor(bgDark);
+                g.fillRect(0, 0, getWidth(), getHeight());
                 if (banner != null) {
                     Graphics2D g2 = (Graphics2D) g;
                     g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
@@ -116,7 +118,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
                     int pw = getWidth();
                     int ph = getHeight();
                     if (iw > 0 && ih > 0) {
-                        double scale = Math.max((double) pw / iw, (double) ph / ih);
+                        double scale = Math.min((double) pw / iw, (double) ph / ih);
                         int nw = (int) (iw * scale);
                         int nh = (int) (ih * scale);
                         int x = (pw - nw) / 2;
@@ -125,9 +127,6 @@ public class VentanaVeterinaria extends VetBaseFrame {
                     } else {
                         g2.drawImage(banner, 0, 0, pw, ph, this);
                     }
-                } else {
-                    g.setColor(accentTeal);
-                    g.fillRect(0, 0, getWidth(), getHeight());
                 }
             }
         };
