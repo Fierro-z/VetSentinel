@@ -84,7 +84,19 @@ public class DatabaseConfig {
     }
 
     public void inicializarBD() {
-        try (Connection con = getConnection(); Statement stmt = con.createStatement()) {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            com.vetsentinel.util.VetLogger.error("Driver SQLite no encontrado", e);
+            return;
+        }
+        try (Connection con = DriverManager.getConnection(URL);
+             Statement stmt = con.createStatement()) {
+                
+            stmt.execute("PRAGMA foreign_keys = OFF"); // Desactivar al inicio
+            stmt.execute("PRAGMA journal_mode = WAL");
+            stmt.execute("PRAGMA busy_timeout = 5000");
+
             stmt.execute("CREATE TABLE IF NOT EXISTS Parasitos (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "nombre TEXT NOT NULL," +
@@ -151,7 +163,8 @@ public class DatabaseConfig {
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN regimen TEXT DEFAULT 'Contributivo'"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN altitud INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
 
-            // Eliminar parásitos antiguos que no correspondan
+            // Limpieza de diagnósticos huérfanos y parásitos no deseados
+            stmt.execute("DELETE FROM Diagnosticos WHERE id_parasito NOT IN (SELECT id FROM Parasitos WHERE nombre LIKE '%Toxoplasma%' OR nombre LIKE '%Leishmania%' OR nombre LIKE '%Toxocara%')");
             stmt.execute("DELETE FROM Parasitos WHERE nombre NOT LIKE '%Toxoplasma%' AND nombre NOT LIKE '%Leishmania%' AND nombre NOT LIKE '%Toxocara%'");
 
             // Semilla de parásitos
@@ -200,9 +213,6 @@ public class DatabaseConfig {
                 }
             }
 
-            // Limpieza de diagnósticos huérfanos (cuyo parásito fue eliminado)
-            stmt.execute("DELETE FROM Diagnosticos WHERE id_parasito NOT IN (SELECT id FROM Parasitos)");
-
             // Migración: Eliminar contraseñas legacy en texto plano (que no tienen formato 'salt:hash')
             stmt.execute("DELETE FROM Usuarios WHERE password NOT LIKE '%:%'");
 
@@ -234,7 +244,8 @@ public class DatabaseConfig {
                     }
                 }
             }
-
+            
+            stmt.execute("PRAGMA foreign_keys = ON"); // Reactivar al final
         } catch (SQLException e) {
             com.vetsentinel.util.VetLogger.error("Error al inicializar la base de datos", e);
         }

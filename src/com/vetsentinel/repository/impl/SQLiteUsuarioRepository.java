@@ -18,13 +18,14 @@ public class SQLiteUsuarioRepository implements UsuarioRepository {
 
     @Override
     public boolean validarCredenciales(String username, String password) {
-        try (Connection con = dbConfig.getConnection()) {
-            PreparedStatement ps = con.prepareStatement("SELECT password FROM Usuarios WHERE username = ?");
+        try (Connection con = dbConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT password FROM Usuarios WHERE username = ?")) {
             ps.setString(1, username);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                String storedHash = rs.getString("password");
-                return com.vetsentinel.util.PasswordHasher.verify(password, storedHash);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String storedHash = rs.getString("password");
+                    return com.vetsentinel.util.PasswordHasher.verify(password, storedHash);
+                }
             }
         } catch (SQLException e) {
             com.vetsentinel.util.VetLogger.error("Error al validar usuario", e);

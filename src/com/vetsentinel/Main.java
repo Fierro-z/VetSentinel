@@ -37,7 +37,7 @@ public class Main {
 
         // 4. Instanciar servicios de negocio inyectando sus dependencias
         RiskAssessmentService riskService = new RiskAssessmentService(strategies);
-        AuthenticationService authService = new AuthenticationService(usuarioRepo);
+        AuthenticationService authService = new AuthenticationServiceImpl(usuarioRepo); // ← CORREGIDO
 
         // 5. Iniciar la interfaz de usuario inyectando las dependencias necesarias
         javax.swing.SwingUtilities.invokeLater(() -> {

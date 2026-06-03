@@ -13,7 +13,6 @@ import java.util.function.Supplier;
 public abstract class VetBaseFrame extends JFrame {
 
     protected static boolean isDarkMode = false;
-    private boolean localDarkMode = false;
     private static Image cachedBanner = null;
 
     public static synchronized Image getBannerImage() {
@@ -51,7 +50,6 @@ public abstract class VetBaseFrame extends JFrame {
 
     public VetBaseFrame(String title) {
         super(title);
-        localDarkMode = isDarkMode;
         aplicarColores(isDarkMode);
     }
 
@@ -87,7 +85,6 @@ public abstract class VetBaseFrame extends JFrame {
 
     protected void alternarTema() {
         isDarkMode = !isDarkMode;
-        localDarkMode = isDarkMode;
         aplicarColores(isDarkMode);
         
         getContentPane().setBackground(bgDark);
@@ -102,16 +99,8 @@ public abstract class VetBaseFrame extends JFrame {
 
     @Override
     public void setVisible(boolean b) {
-        if (b && localDarkMode != isDarkMode) {
-            localDarkMode = isDarkMode;
-            aplicarColores(isDarkMode);
-            getContentPane().setBackground(bgDark);
-            for (Runnable r : updaters) {
-                r.run();
-            }
-            SwingUtilities.updateComponentTreeUI(this);
-            repaint();
-        }
+        // La lógica de esta sobrecarga ya no es necesaria, 
+        // pero se mantiene para evitar romper la cadena de llamadas si se extiende.
         super.setVisible(b);
     }
 
