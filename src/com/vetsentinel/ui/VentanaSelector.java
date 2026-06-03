@@ -54,7 +54,7 @@ public class VentanaSelector extends VetBaseFrame {
         root.add(buildCenter(), BorderLayout.CENTER);
 
         setContentPane(root);
-        setSize(960, 520);
+        setSize(960, 600); // Increased size to accommodate new text
         setResizable(false);
         setLocationRelativeTo(null);
 
@@ -134,6 +134,34 @@ public class VentanaSelector extends VetBaseFrame {
     }
 
     private JPanel buildCenter() {
+        JPanel centerWrapper = new JPanel(new BorderLayout());
+        centerWrapper.setOpaque(false);
+
+        // Header Text Panel
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false);
+        textPanel.setBorder(new EmptyBorder(10, 50, 10, 50));
+
+        JLabel lblWelcome = new JLabel("¡Bienvenido!");
+        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        updaters.add(() -> lblWelcome.setForeground(textPrimary));
+        lblWelcome.setForeground(textPrimary);
+        lblWelcome.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblWelcome.setBorder(new EmptyBorder(15, 0, 5, 0));
+
+        JLabel lblInstruction = new JLabel("Seleccione el perfil que mejor describa su función");
+        lblInstruction.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        updaters.add(() -> lblInstruction.setForeground(textMuted));
+        lblInstruction.setForeground(textMuted);
+        lblInstruction.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        textPanel.add(lblWelcome);
+        textPanel.add(lblInstruction);
+
+        centerWrapper.add(textPanel, BorderLayout.NORTH);
+
+        // Cards Panel
         JPanel center = new JPanel(new GridBagLayout());
         center.setOpaque(false);
         updaters.add(center::repaint);
@@ -141,22 +169,22 @@ public class VentanaSelector extends VetBaseFrame {
         JPanel container = new JPanel(new GridLayout(1, 3, 20, 0));
         container.setOpaque(false);
         
-        JButton btnClinica = createModuleButton("🏥", "Módulo Clínico", "Registro de diagnósticos", () -> accentBlue);
+        JButton btnClinica = createModuleCard("👨‍⚕️", "Veterinario", "Registro clínico integral,\ndiagnósticos asistidos por IA\ny gestión completa de pacientes.", () -> accentBlue);
         btnClinica.addActionListener(e -> { 
             this.dispose(); 
             new VentanaLogin("CLINICA", propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
         });
 
-        JButton btnCiudadano = createModuleButton("🌍", "BioGeo Risk", "Prevención Ciudadana", () -> okGreen);
+        JButton btnCiudadano = createModuleCard("👨‍👩‍👧", "Ciudadano", "Consulta rápida de alertas\nsanitarias regionales y estado\nepidemiológico de tu comunidad.", () -> okGreen);
         btnCiudadano.addActionListener(e -> { 
             this.dispose(); 
             new VentanaCiudadana(this).setVisible(true); 
         });
 
-        JButton btnEstado = createModuleButton("📊", "Módulo Estado", "Vigilancia Epidemiológica", () -> accentTeal);
+        JButton btnEstado = createModuleCard("🏛️", "Entidad Estatal", "Análisis de salud pública,\nmapas de calor biogeográficos\ny reportes de riesgo en tiempo real.", () -> accentTeal);
         btnEstado.addActionListener(e -> { 
             this.dispose(); 
-            new VentanaLogin("ESTADO", propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+            new VentanaLogin("ESTADO", propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true);
         });
 
         container.add(btnClinica);
@@ -164,16 +192,18 @@ public class VentanaSelector extends VetBaseFrame {
         container.add(btnEstado);
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(20, 50, 40, 50);
+        gbc.insets = new Insets(10, 50, 30, 50);
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         center.add(container, gbc);
 
-        return center;
+        centerWrapper.add(center, BorderLayout.CENTER);
+
+        return centerWrapper;
     }
 
-    private JButton createModuleButton(String icon, String title, String subtitle, Supplier<Color> colorSupp) {
+    private JButton createModuleCard(String icon, String title, String subtitle, Supplier<Color> colorSupp) {
         JButton btn = new JButton() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -181,23 +211,37 @@ public class VentanaSelector extends VetBaseFrame {
                 Color baseColor = colorSupp.get();
                 Color bg = getModel().isRollover() ? new Color(baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue(), 30) : bgCard;
                 if (getModel().isPressed()) bg = new Color(baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue(), 60);
+                
                 g2.setColor(bg);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, 16, 16));
+                
                 g2.setColor(getModel().isRollover() ? baseColor : borderColor);
                 g2.setStroke(new BasicStroke(2f));
                 g2.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, 16, 16));
+                
+                // Icon
                 g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 64));
-                g2.drawString(icon, (getWidth() - g2.getFontMetrics().stringWidth(icon)) / 2, 110);
+                g2.drawString(icon, (getWidth() - g2.getFontMetrics().stringWidth(icon)) / 2, 80);
+                
+                // Title
                 g2.setColor(textPrimary);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 18));
-                g2.drawString(title, (getWidth() - g2.getFontMetrics().stringWidth(title)) / 2, 170);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+                g2.drawString(title, (getWidth() - g2.getFontMetrics().stringWidth(title)) / 2, 130);
+                
+                // Subtitle (Multiline)
                 g2.setColor(textMuted);
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
-                g2.drawString(subtitle, (getWidth() - g2.getFontMetrics().stringWidth(subtitle)) / 2, 200);
+                String[] lines = subtitle.split("\n");
+                int startY = 170;
+                for (String line : lines) {
+                    g2.drawString(line, (getWidth() - g2.getFontMetrics().stringWidth(line)) / 2, startY);
+                    startY += g2.getFontMetrics().getHeight() + 2;
+                }
+                
                 g2.dispose();
             }
         };
-        btn.setPreferredSize(new Dimension(250, 260));
+        btn.setPreferredSize(new Dimension(260, 280));
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
