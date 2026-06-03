@@ -162,4 +162,42 @@ public abstract class VetBaseFrame extends JFrame {
         updaters.add(() -> l.setForeground(colorSupplier.get()));
         return l;
     }
+
+    public void realizarFadeIn() {
+        final JComponent glass = (JComponent) getGlassPane();
+        glass.setLayout(new BorderLayout());
+        glass.setVisible(true);
+        
+        JPanel fadePanel = new JPanel() {
+            private float alpha = 1.0f;
+            private Timer timer;
+            {
+                setOpaque(false);
+                timer = new Timer(16, e -> {
+                    alpha -= 0.05f;
+                    if (alpha <= 0.0f) {
+                        alpha = 0.0f;
+                        timer.stop();
+                        glass.setVisible(false);
+                        glass.removeAll();
+                    }
+                    repaint();
+                });
+                timer.start();
+            }
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+                g2.setColor(bgDark);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        
+        glass.removeAll();
+        glass.add(fadePanel, BorderLayout.CENTER);
+        glass.revalidate();
+    }
 }

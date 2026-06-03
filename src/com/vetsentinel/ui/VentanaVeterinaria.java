@@ -91,6 +91,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
 
         wireListeners();
         resetAlertPanel();
+        realizarFadeIn();
     }
 
     private JPanel buildHeader() {
@@ -163,7 +164,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVolverTop.addActionListener(e -> { 
             this.dispose(); 
-            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, false).setVisible(true); 
         });
 
         topLeftRow.add(btnVolverTop);

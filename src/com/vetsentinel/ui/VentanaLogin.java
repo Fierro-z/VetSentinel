@@ -56,6 +56,7 @@ public class VentanaLogin extends VetBaseFrame {
         setSize(480, 650);
         setResizable(false);
         setLocationRelativeTo(null);
+        realizarFadeIn();
     }
 
     private JPanel buildHeader() {
@@ -205,7 +206,7 @@ public class VentanaLogin extends VetBaseFrame {
         btnVolver.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnVolver.addActionListener(e -> { 
             this.dispose(); 
-            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, false).setVisible(true); 
         });
         card.add(btnVolver);
 

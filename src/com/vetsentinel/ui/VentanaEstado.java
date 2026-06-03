@@ -60,6 +60,7 @@ public class VentanaEstado extends VetBaseFrame {
         setMinimumSize(new Dimension(1000, 700));
         pack();
         setLocationRelativeTo(null);
+        realizarFadeIn();
     }
 
     private JPanel buildHeader() {
@@ -106,7 +107,7 @@ public class VentanaEstado extends VetBaseFrame {
         btnVolverTop.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnVolverTop.addActionListener(e -> { 
             this.dispose(); 
-            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService).setVisible(true); 
+            new VentanaSelector(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, false).setVisible(true); 
         });
 
         JPanel btnWrapper = new JPanel(new GridBagLayout());

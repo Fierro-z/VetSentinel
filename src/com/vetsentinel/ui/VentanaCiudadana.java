@@ -57,6 +57,7 @@ public class VentanaCiudadana extends VetBaseFrame {
         setLocationRelativeTo(null);
 
         resetAlertPanel();
+        realizarFadeIn();
     }
 
     private JPanel buildHeader() {

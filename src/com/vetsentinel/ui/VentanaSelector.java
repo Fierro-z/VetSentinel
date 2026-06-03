@@ -27,6 +27,16 @@ public class VentanaSelector extends VetBaseFrame {
                            DiagnosticoRepository diagnosticoRepository,
                            AuthenticationService authenticationService,
                            RiskAssessmentService riskAssessmentService) {
+        this(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, true);
+    }
+
+    public VentanaSelector(PropietarioRepository propietarioRepository,
+                           MascotaRepository mascotaRepository,
+                           ParasitoRepository parasitoRepository,
+                           DiagnosticoRepository diagnosticoRepository,
+                           AuthenticationService authenticationService,
+                           RiskAssessmentService riskAssessmentService,
+                           boolean conAnimacion) {
         super("VetSentinel — Seleccionar Módulo");
         this.propietarioRepository = propietarioRepository;
         this.mascotaRepository = mascotaRepository;
@@ -47,6 +57,10 @@ public class VentanaSelector extends VetBaseFrame {
         setSize(960, 520);
         setResizable(false);
         setLocationRelativeTo(null);
+
+        if (conAnimacion) {
+            realizarFadeIn();
+        }
     }
 
     private JPanel buildHeader() {
