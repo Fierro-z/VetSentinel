@@ -1,4 +1,4 @@
-![Banner de VetSentinel](img/bannerProyecto.png)
+![Banner de VetSentinel](resources/img/bannerProyecto.png)
 # VetSentinel 🐾: Arquitectura Integral para la Prevención de Zoonosis Parasitarias
 **Prevención de enfermedades zoonóticas parasitarias: De la Clínica al Hogar.**
 
