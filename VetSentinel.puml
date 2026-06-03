@@ -1,148 +1,185 @@
-@startuml VetSentinel
+@startuml VetSentinel_Class_Diagram
 
-skinparam classAttributeIconSize 0
-skinparam classFontStyle Bold
+skinparam backgroundColor #F4F7F9
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName "SansSerif"
+
 skinparam class {
-    BackgroundColor #FFFEF0
-    BorderColor #8B6914
-    ArrowColor #555555
+    BackgroundColor #FFFFFF
+    BorderColor #14B8A6
+    ArrowColor #0A64DC
+    FontColor #003D5B
 }
 
-class Main {
-    + {static} main(args: String[]) : void
+package com.vetsentinel.config {
+    class DatabaseConfig {
+        + {static} getConnection(): Connection
+        + {static} inicializarBaseDatos(): void
+    }
+    class SimpleConnectionPool {
+        - connectionQueue: Queue<Connection>
+        + getConnection(): Connection
+        + releaseConnection(Connection): void
+    }
 }
 
-class ConexionDB {
-    - {static} URL : String
-    --
-    + {static} getConexion() : Connection
-    + {static} inicializarBD() : void
-    + {static} obtenerTodosLosParasitos() : List<Parasito>
-    + {static} obtenerEstadisticasEpidemiologicas() : String
-    + {static} upsertPropietario(p: Propietario) : int
-    + {static} buscarPropietarioPorCedula(cedula: String) : Propietario
-    + {static} upsertMascota(m: Mascota) : int
-    + {static} insertarDiagnostico(idMasc: int, idPar: int, nivelRiesgo: String) : void
+package com.vetsentinel.model {
+    class Propietario {
+        - id: int
+        - nombre: String
+        - cedula: String
+        - direccion: String
+        - departamento: String
+    }
+    class Mascota {
+        - id: int
+        - nombre: String
+        - especie: String
+        - edad: int
+        - idPropietario: int
+    }
+    class Parasito {
+        - id: int
+        - nombre: String
+        - descripcion: String
+    }
+    class Diagnostico {
+        - id: int
+        - idMascota: int
+        - idParasito: int
+        - fecha: String
+        - estadoContagio: String
+        - nivelRiesgo: String
+        - reporte: String
+    }
+    enum RiskLevel {
+        BAJO
+        MEDIO
+        MODERADO
+        ALTO
+        CRÍTICO
+        EMERGENCIA_CRÍTICA
+    }
+    class RiskResult {
+        - nivelRiesgo: String
+        - accionesSugeridas: String
+    }
 }
 
-class Propietario {
-    - id : int
-    - cedula : String
-    - nombre : String
-    - direccion : String
-    - tieneNinos : boolean
-    - hayEmbarazadas : boolean
-    --
-    + Propietario(id, cedula, nombre, direccion, tieneNinos, hayEmbarazadas)
-    + getId() : int
-    + setId(id: int) : void
-    + getCedula() : String
-    + getNombre() : String
-    + getDireccion() : String
-    + isTieneNinos() : boolean
-    + isHayEmbarazadas() : boolean
+package com.vetsentinel.repository {
+    interface PropietarioRepository {
+        + guardar(Propietario): void
+        + buscarPorCedula(String): Propietario
+    }
+    interface MascotaRepository {
+        + guardar(Mascota): void
+        + buscarPorId(int): Mascota
+    }
+    interface ParasitoRepository {
+        + buscarPorId(int): Parasito
+        + listarTodos(): List<Parasito>
+    }
+    interface DiagnosticoRepository {
+        + guardar(Diagnostico): void
+        + obtenerRiesgoPorDepartamento(): Map<String, String>
+        + obtenerHistorialPorDepartamento(String): Object[][]
+        + obtenerCepasPorUbicacion(): List<String[]>
+    }
+    interface UsuarioRepository {
+        + validarCredenciales(String, String): boolean
+    }
+
+    package impl {
+        class SQLitePropietarioRepository implements com.vetsentinel.repository.PropietarioRepository
+        class SQLiteMascotaRepository implements com.vetsentinel.repository.MascotaRepository
+        class SQLiteParasitoRepository implements com.vetsentinel.repository.ParasitoRepository
+        class SQLiteDiagnosticoRepository implements com.vetsentinel.repository.DiagnosticoRepository
+        class SQLiteUsuarioRepository implements com.vetsentinel.repository.UsuarioRepository
+    }
 }
 
-class Mascota {
-    - id : int
-    - nombre : String
-    - especie : String
-    - edad : int
-    - propietario : Propietario
-    --
-    + Mascota(id, nombre, especie, edad, propietario)
-    + getId() : int
-    + setId(id: int) : void
-    + getNombre() : String
-    + getEspecie() : String
-    + getEdad() : int
-    + getPropietario() : Propietario
+package com.vetsentinel.service {
+    interface AuthenticationService {
+        + login(String, String): boolean
+    }
+    class RiskAssessmentService {
+        - strategies: Map<String, RiskStrategy>
+        + evaluarRiesgo(Diagnostico, Mascota, Propietario): RiskResult
+    }
+    interface RiskStrategy {
+        + evaluar(Diagnostico, Mascota, Propietario): RiskResult
+    }
+
+    package service.impl {
+        class AuthenticationServiceImpl implements com.vetsentinel.service.AuthenticationService
+        class ToxoplasmosisStrategy implements com.vetsentinel.service.RiskStrategy
+        class LeishmaniasisCutaneaStrategy implements com.vetsentinel.service.RiskStrategy
+        class LeishmaniasisVisceralStrategy implements com.vetsentinel.service.RiskStrategy
+        class DefaultRiskStrategy implements com.vetsentinel.service.RiskStrategy
+    }
 }
 
-class Parasito {
-    - id : int
-    - nombre : String
-    - riesgoPrincipal : String
-    - medidasPreventivas : String
-    - alertaEmbarazo : boolean
-    - alertaNinos : boolean
-    --
-    + Parasito(id, nombre, riesgoPrincipal, medidasPreventivas, alertaEmbarazo, alertaNinos)
-    + getId() : int
-    + getNombre() : String
-    + getRiesgoPrincipal() : String
-    + getMedidasPreventivas() : String
-    + isAlertaEmbarazo() : boolean
-    + isAlertaNinos() : boolean
-    + toString() : String
+package com.vetsentinel.ui {
+    abstract class VetBaseFrame {
+        # {static} isDarkMode: boolean
+        - {static} cachedBanner: Image
+        # updaters: List<Runnable>
+        + {static} getBannerImage(): Image
+        # crearHeaderPanel(): JPanel
+        # createBackButton(): JButton
+        # createButton(String, Supplier<Color>): JButton
+        # createTextField(String): JTextField
+        # makeLabel(String, Font, Supplier<Color>): JLabel
+        # alternarTema(): void
+        # realizarFadeIn(): void
+    }
+
+    class VentanaSelector extends VetBaseFrame {
+        + VentanaSelector(DatabaseConfig)
+    }
+    class VentanaLogin extends VetBaseFrame {
+        - authService: AuthenticationService
+    }
+    class VentanaVeterinaria extends VetBaseFrame {
+        - propietarioRepo: PropietarioRepository
+        - mascotaRepo: MascotaRepository
+        - diagnosticoRepo: DiagnosticoRepository
+    }
+    class VentanaEstado extends VetBaseFrame {
+        - diagnosticoRepo: DiagnosticoRepository
+        - riskService: RiskAssessmentService
+        - onVolver: Runnable
+    }
+    class VentanaCiudadana extends VetBaseFrame
+    class PanelMapaColombia {
+        + actualizarRiesgos(Map<String, String>): void
+    }
 }
 
-class Diagnostico {
-    - id : int
-    - mascota : Mascota
-    - parasito : Parasito
-    - fecha : String
-    - estadoContagio : String
-    --
-    + Diagnostico(id, mascota, parasito, fecha, estadoContagio)
-    + evaluarRiesgoHumano() : String
-    + getId() : int
-    + getMascota() : Mascota
-    + getParasito() : Parasito
-    + getFecha() : String
-    + getEstadoContagio() : String
+package com.vetsentinel.util {
+    class PasswordHasher {
+        + {static} hash(String): String
+    }
+    class VetLogger {
+        + {static} info(String): void
+        + {static} error(String, Throwable): void
+    }
 }
 
-class VentanaVeterinaria {
-    - isDarkMode : boolean
-    - updaters : List<Runnable>
-    - txtNombreMascota : JTextField
-    - txtEdadMascota : JTextField
-    - cbEspecie : JComboBox<String>
-    - cbParasito : JComboBox<Parasito>
-    - txtCedula : JTextField
-    - txtNombrePropietario : JTextField
-    - txtDireccion : JTextField
-    - chkEmbarazadas : JCheckBox
-    - chkNinos : JCheckBox
-    - btnGuardar : JButton
-    - btnVerHistorial : JButton
-    - btnEstadisticas : JButton
-    - alertPanel : JPanel
-    - alertIconLabel : JLabel
-    - alertNivelLabel : JLabel
-    - alertTextArea : JTextArea
-    - alertMascotaLabel : JLabel
-    --
-    + VentanaVeterinaria()
-    - aplicarColores(oscuro: boolean) : void
-    - alternarTema() : void
-    - actualizarUI() : void
-    - buildHeader() : JPanel
-    - buildCenter() : JPanel
-    - buildFormPanel() : JPanel
-    - buildAlertPanel() : JPanel
-    - wireListeners() : void
-    - buscarClienteAutocompletar() : void
-    - guardarYMostrarAlerta() : void
-    - mostrarAlertaEnPanel(alerta: String, mascota: String, especie: String, parasito: String) : void
-    - verHistorial() : void
-    - verEstadisticas() : void
-    - resetAlertPanel() : void
+class com.vetsentinel.Main {
+    + {static} main(String[] args): void
 }
 
-' Relaciones
-Main ..> ConexionDB : <<usa>>
-Main ..> VentanaVeterinaria : <<crea>>
+' Relaciones de Dependencia y Estructura
+com.vetsentinel.model.Mascota "1" *-- "1" com.vetsentinel.model.Propietario : pertenece a
+com.vetsentinel.model.Diagnostico "1" *-- "1" com.vetsentinel.model.Mascota : evalúa
+com.vetsentinel.model.Diagnostico "1" *-- "1" com.vetsentinel.model.Parasito : detecta
 
-VentanaVeterinaria ..> ConexionDB : <<usa>>
-VentanaVeterinaria ..> Diagnostico : <<crea>>
-VentanaVeterinaria ..> Mascota : <<crea>>
-VentanaVeterinaria ..> Parasito : <<crea>>
-VentanaVeterinaria ..> Propietario : <<crea>>
+com.vetsentinel.service.RiskAssessmentService "1" o-- "*" com.vetsentinel.service.RiskStrategy : usa
+com.vetsentinel.ui.VentanaEstado "1" *-- "1" com.vetsentinel.ui.PanelMapaColombia : contiene
 
-Diagnostico "1" --> "1" Mascota : mascota
-Diagnostico "1" --> "1" Parasito : parasito
-Mascota "1" --> "1" Propietario : propietario
+com.vetsentinel.Main ..> com.vetsentinel.config.DatabaseConfig : inicializa
+com.vetsentinel.Main ..> com.vetsentinel.ui.VentanaSelector : despliega
 
 @enduml

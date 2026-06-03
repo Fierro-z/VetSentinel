@@ -1,23 +1,19 @@
-############################
-# IDEs
-############################
-
+# ===================================================================
+# IDEs & Editors
+# ===================================================================
 # IntelliJ IDEA
 .idea/
+*.iml
 out/
-.kotlin
 
 # VS Code
 .vscode/
 
 # Eclipse
-.apt_generated
 .classpath
-.factorypath
 .project
 .settings/
-.springBeans
-.sts4-cache
+bin/
 
 # NetBeans
 /nbproject/private/
@@ -26,39 +22,35 @@ out/
 /nbdist/
 /.nb-gradle/
 
-############################
-# Compilación
-############################
+# ===================================================================
+# Build artifacts & Dependencies
+# ===================================================================
+# For Maven or Gradle, if you use them in the future
+build/
+target/
 
-bin/
+# ===================================================================
+# Local Files & Data
+# ===================================================================
+# Local database file - VERY IMPORTANT
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 
-# Excepciones
-!**/src/main/**/out/
-!**/src/test/**/out/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-############################
-# Logs y reportes
-############################
-
+# Log files
 logs/
 *.log
 
-# Crash reports de la JVM
+# JVM crash reports
 hs_err_pid*
 replay_pid*
 
-############################
-# Archivos generados
-############################
-
-# Repomix
-repomix-output.xml
-
-############################
-# Sistema operativo
-############################
-
+# ===================================================================
+# OS-specific files
+# ===================================================================
 # macOS
 .DS_Store
+
+# Windows
+Thumbs.db
