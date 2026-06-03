@@ -20,6 +20,7 @@ public class VentanaEstado extends VetBaseFrame {
     private JButton btnActualizar;
     private PanelMapaColombia panelMapaVector;
     private JPanel panelDatos;
+    private String selectedDepartamento = null;
 
     private final PropietarioRepository propietarioRepository;
     private final MascotaRepository mascotaRepository;
@@ -166,6 +167,10 @@ public class VentanaEstado extends VetBaseFrame {
         container.add(title, BorderLayout.NORTH);
 
         panelMapaVector = new PanelMapaColombia();
+        panelMapaVector.setSelectionListener(depto -> {
+            selectedDepartamento = depto;
+            actualizarTablaCepas();
+        });
         container.add(panelMapaVector, BorderLayout.CENTER);
 
         actualizarMapaVector();
@@ -184,36 +189,120 @@ public class VentanaEstado extends VetBaseFrame {
         panelDatos = createCard();
         panelDatos.setLayout(new BorderLayout(0, 15));
 
-        JLabel title = makeLabel("Cepas y Alertas por Ubicación", FONT_SUBTITLE, () -> accentTeal);
-        panelDatos.add(title, BorderLayout.NORTH);
-
         actualizarTablaCepas();
 
         return panelDatos;
     }
 
-    private void actualizarTablaCepas() {
-        if (panelDatos.getComponentCount() > 1) {
-            panelDatos.remove(1);
+    private JPanel buildDatosHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JLabel title = makeLabel(
+            selectedDepartamento == null ? "Cepas y Alertas por Ubicación" : "Casos en " + selectedDepartamento,
+            FONT_SUBTITLE,
+            () -> accentTeal
+        );
+        header.add(title, BorderLayout.WEST);
+
+        if (selectedDepartamento != null) {
+            JButton btnVolver = new JButton("⬅ Volver") {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(isDarkMode ? new Color(30, 41, 55, 220) : new Color(255, 255, 255, 220));
+                    if (getModel().isRollover()) g2.setColor(isDarkMode ? new Color(45, 60, 80, 255) : new Color(235, 240, 245, 255));
+                    g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                    g2.setColor(borderColor);
+                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                    g2.setColor(textPrimary);
+                    g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+                    FontMetrics fm = g2.getFontMetrics();
+                    int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                    int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                    g2.drawString(getText(), x, y);
+                    g2.dispose();
+                }
+            };
+            btnVolver.setPreferredSize(new Dimension(80, 26));
+            btnVolver.setContentAreaFilled(false);
+            btnVolver.setBorderPainted(false);
+            btnVolver.setFocusPainted(false);
+            btnVolver.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnVolver.addActionListener(e -> {
+                selectedDepartamento = null;
+                actualizarTablaCepas();
+            });
+            header.add(btnVolver, BorderLayout.EAST);
         }
-        
-        List<String[]> cepas = diagnosticoRepository.obtenerCepasPorUbicacion();
-        String[] cols = {"Departamento", "Cepa / Parásito", "Casos", "Riesgo Max"};
-        Object[][] data = cepas.toArray(new Object[0][]);
 
-        JTable table = new JTable(data, cols);
-        table.setBackground(bgCard);
-        table.setForeground(textPrimary);
-        table.setFont(FONT_INPUT);
-        table.setRowHeight(30);
-        table.getTableHeader().setBackground(bgDark);
-        table.getTableHeader().setForeground(accentTeal);
-        
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.getViewport().setBackground(bgCard);
-        scroll.setBorder(BorderFactory.createLineBorder(borderColor));
+        return header;
+    }
 
-        panelDatos.add(scroll, BorderLayout.CENTER);
+    private void actualizarTablaCepas() {
+        panelDatos.removeAll();
+        panelDatos.add(buildDatosHeader(), BorderLayout.NORTH);
+
+        if (selectedDepartamento == null) {
+            List<String[]> cepas = diagnosticoRepository.obtenerCepasPorUbicacion();
+            String[] cols = {"Departamento", "Cepa / Parásito", "Casos", "Riesgo Max"};
+            Object[][] data = cepas.toArray(new Object[0][]);
+
+            JTable table = new JTable(data, cols) {
+                @Override public boolean isCellEditable(int r, int c) { return false; }
+            };
+            table.setBackground(bgCard);
+            table.setForeground(textPrimary);
+            table.setFont(FONT_INPUT);
+            table.setRowHeight(30);
+            table.getTableHeader().setBackground(bgDark);
+            table.getTableHeader().setForeground(accentTeal);
+            
+            JScrollPane scroll = new JScrollPane(table);
+            scroll.getViewport().setBackground(bgCard);
+            scroll.setBorder(BorderFactory.createLineBorder(borderColor));
+            panelDatos.add(scroll, BorderLayout.CENTER);
+        } else {
+            Object[][] data = diagnosticoRepository.obtenerHistorialPorDepartamento(selectedDepartamento);
+            if (data.length == 0) {
+                JPanel emptyPanel = new JPanel(new GridBagLayout());
+                emptyPanel.setOpaque(false);
+                JLabel emptyLabel = makeLabel("Sin datos registrados para " + selectedDepartamento, FONT_SUBTITLE.deriveFont(Font.ITALIC), () -> textMuted);
+                emptyPanel.add(emptyLabel);
+                panelDatos.add(emptyPanel, BorderLayout.CENTER);
+            } else {
+                String[] cols = {"Fecha", "Propietario", "Dirección", "Mascota", "Especie", "Parásito", "Riesgo"};
+                JTable table = new JTable(data, cols) {
+                    @Override public boolean isCellEditable(int r, int c) { return false; }
+                    @Override public Component prepareRenderer(javax.swing.table.TableCellRenderer r, int row, int col) {
+                        Component c = super.prepareRenderer(r, row, col);
+                        c.setBackground(row % 2 == 0 ? bgCard : bgPanel);
+                        c.setForeground(textPrimary);
+                        
+                        if (col == 6) {
+                            String v = getValueAt(row, col).toString();
+                            if ("EMERGENCIA CRÍTICA".equals(v) || "EMERGENCIA CRITICA".equals(v) || "CRITICO".equals(v) || "CRÍTICO".equals(v)) c.setForeground(dangerRed);
+                            else if ("ALTO".equals(v) || "MODERADO".equals(v)) c.setForeground(warnOrange);
+                            else if ("MEDIO".equals(v)) c.setForeground(new Color(230, 180, 50));
+                            else if ("BAJO".equals(v)) c.setForeground(okGreen);
+                        }
+                        return c;
+                    }
+                };
+                table.setBackground(bgCard);
+                table.setForeground(textPrimary);
+                table.setFont(FONT_INPUT);
+                table.setRowHeight(32);
+                table.getTableHeader().setBackground(bgDark);
+                table.getTableHeader().setForeground(accentTeal);
+                
+                JScrollPane scroll = new JScrollPane(table);
+                scroll.getViewport().setBackground(bgCard);
+                scroll.setBorder(BorderFactory.createLineBorder(borderColor));
+                panelDatos.add(scroll, BorderLayout.CENTER);
+            }
+        }
+
         panelDatos.revalidate();
         panelDatos.repaint();
     }

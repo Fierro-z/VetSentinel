@@ -55,6 +55,12 @@ public class PanelMapaColombia extends JPanel {
     // Cache of screen shapes for drawing and hit testing
     private final Map<String, List<Path2D.Double>> screenShapes = new HashMap<>();
 
+    private java.util.function.Consumer<String> selectionListener = null;
+
+    public void setSelectionListener(java.util.function.Consumer<String> listener) {
+        this.selectionListener = listener;
+    }
+
     public PanelMapaColombia() {
         setOpaque(false);
         cargarGeoJSON();
@@ -84,6 +90,14 @@ public class PanelMapaColombia extends JPanel {
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
+                    if (dragStart != null) {
+                        double dist = e.getPoint().distance(dragStart);
+                        if (dist < 3 && hoveredDepto != null) {
+                            if (selectionListener != null) {
+                                selectionListener.accept(hoveredDepto);
+                            }
+                        }
+                    }
                     dragStart = null;
                 }
             }

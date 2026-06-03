@@ -162,4 +162,43 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
         } catch (SQLException ignore) {}
         return "N/A";
     }
+
+    @Override
+    public Object[][] obtenerHistorialPorDepartamento(String departamento) {
+        try (Connection con = dbConfig.getConnection()) {
+            String sql =
+                    "SELECT d.fecha, d.nivel_riesgo, " +
+                            "m.nombre AS mascota, m.especie, " +
+                            "p.nombre AS propietario, p.cedula, p.direccion, " +
+                            "par.nombre AS parasito " +
+                            "FROM Diagnosticos d " +
+                            "JOIN Mascotas m ON d.id_mascota = m.id " +
+                            "JOIN Propietarios p ON m.id_propietario = p.id " +
+                            "JOIN Parasitos par ON d.id_parasito = par.id " +
+                            "WHERE LOWER(p.departamento) = LOWER(?) " +
+                            "ORDER BY d.fecha DESC";
+
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, departamento);
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<Object[]> rows = new ArrayList<>();
+                    while (rs.next()) {
+                        rows.add(new Object[]{
+                                rs.getString("fecha"),
+                                rs.getString("propietario"),
+                                rs.getString("direccion") != null ? rs.getString("direccion") : "-",
+                                rs.getString("mascota"),
+                                rs.getString("especie"),
+                                rs.getString("parasito"),
+                                rs.getString("nivel_riesgo") != null ? rs.getString("nivel_riesgo") : "N/A"
+                        });
+                    }
+                    return rows.toArray(new Object[0][]);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error en obtenerHistorialPorDepartamento: " + e.getMessage());
+            return new Object[0][];
+        }
+    }
 }
