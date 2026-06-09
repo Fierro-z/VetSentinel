@@ -741,7 +741,7 @@ public class VentanaVeterinaria extends VetBaseFrame {
         String alerta = result.getAlertaTexto();
         String nivelBD = result.getNivel().getDbValue();
 
-        mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito);
+        mostrarAlertaEnPanel(alerta, nombreMascota, especie, nombreParasito, nivelBD);
         
         try {
             diagnosticoRepository.registrarCasoCompleto(propietario, mascota, selectedParasito.getId(), nivelBD, alerta);
@@ -750,16 +750,16 @@ public class VentanaVeterinaria extends VetBaseFrame {
         }
     }
 
-    private void mostrarAlertaEnPanel(String alerta, String mascota, String especie, String parasito) {
+    private void mostrarAlertaEnPanel(String alerta, String mascota, String especie, String parasito, String nivelRiesgo) {
         String nivel;
         Color  nivelColor;
         String icon;
 
-        if (alerta.contains("EMERGENCIA CRÍTICA") || alerta.contains("EMERGENCIA CRITICA")) {
+        if ("EMERGENCIA CRÍTICA".equalsIgnoreCase(nivelRiesgo) || "EMERGENCIA CRITICA".equalsIgnoreCase(nivelRiesgo)) {
             nivel = "🚨  EMERGENCIA CRÍTICA";  nivelColor = dangerRed;    icon = "🚨";
-        } else if (alerta.contains("NIVEL: CRITICO") || alerta.contains("NIVEL: CRÍTICO")) {
+        } else if ("CRITICO".equalsIgnoreCase(nivelRiesgo) || "CRÍTICO".equalsIgnoreCase(nivelRiesgo)) {
             nivel = "⚠  NIVEL CRÍTICO";  nivelColor = dangerRed;    icon = "🚨";
-        } else if (alerta.contains("NIVEL: ALTO") || alerta.contains("NIVEL: MEDIO")) {
+        } else if ("ALTO".equalsIgnoreCase(nivelRiesgo) || "MEDIO".equalsIgnoreCase(nivelRiesgo)) {
             nivel = "▲  ATENCIÓN";     nivelColor = warnOrange;   icon = "⚠️";
         } else {
             nivel = "✓  NIVEL BAJO";     nivelColor = okGreen;       icon = "✅";
