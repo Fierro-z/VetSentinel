@@ -226,9 +226,34 @@ public class DatabaseConfig {
             // Semilla de usuarios por defecto
             var rsUsr = stmt.executeQuery("SELECT COUNT(*) FROM Usuarios");
             int userCount = rsUsr.next() ? rsUsr.getInt(1) : 0;
+
+            String adminPass = System.getenv("VETSENTINEL_ADMIN_PASS");
+            String estadoPass = System.getenv("VETSENTINEL_ESTADO_PASS");
+
+            if (adminPass == null || estadoPass == null) {
+                java.io.File configFile = new java.io.File("config.properties");
+                if (configFile.exists()) {
+                    java.util.Properties props = new java.util.Properties();
+                    try (java.io.FileInputStream fis = new java.io.FileInputStream(configFile)) {
+                        props.load(fis);
+                        if (adminPass == null) adminPass = props.getProperty("admin.password");
+                        if (estadoPass == null) estadoPass = props.getProperty("estado.password");
+                    } catch (java.io.IOException e) {
+                        com.vetsentinel.util.VetLogger.error("Error al leer archivo config.properties", e);
+                    }
+                }
+            }
+
+            if (adminPass == null || adminPass.trim().isEmpty()) {
+                adminPass = "admin123";
+            }
+            if (estadoPass == null || estadoPass.trim().isEmpty()) {
+                estadoPass = "estado123";
+            }
+
             if (userCount == 0) {
-                String hashedAdmin = com.vetsentinel.util.PasswordHasher.hash("admin123");
-                String hashedEstado = com.vetsentinel.util.PasswordHasher.hash("estado123");
+                String hashedAdmin = com.vetsentinel.util.PasswordHasher.hash(adminPass);
+                String hashedEstado = com.vetsentinel.util.PasswordHasher.hash(estadoPass);
                 
                 try (PreparedStatement psAdmin = con.prepareStatement("INSERT INTO Usuarios (username, password) VALUES ('admin', ?)")) {
                     psAdmin.setString(1, hashedAdmin);
@@ -241,12 +266,13 @@ public class DatabaseConfig {
             } else {
                 // Asegurar que 'estado' esté registrado por si acaso
                 try (PreparedStatement psCheck = con.prepareStatement("SELECT COUNT(*) FROM Usuarios WHERE username = 'estado'")) {
-                    ResultSet rsCheck = psCheck.executeQuery();
-                    if (rsCheck.next() && rsCheck.getInt(1) == 0) {
-                        String hashedEstado = com.vetsentinel.util.PasswordHasher.hash("estado123");
-                        try (PreparedStatement psEstado = con.prepareStatement("INSERT INTO Usuarios (username, password) VALUES ('estado', ?)")) {
-                            psEstado.setString(1, hashedEstado);
-                            psEstado.executeUpdate();
+                    try (ResultSet rsCheck = psCheck.executeQuery()) {
+                        if (rsCheck.next() && rsCheck.getInt(1) == 0) {
+                            String hashedEstado = com.vetsentinel.util.PasswordHasher.hash(estadoPass);
+                            try (PreparedStatement psEstado = con.prepareStatement("INSERT INTO Usuarios (username, password) VALUES ('estado', ?)")) {
+                                psEstado.setString(1, hashedEstado);
+                                psEstado.executeUpdate();
+                            }
                         }
                     }
                 }
