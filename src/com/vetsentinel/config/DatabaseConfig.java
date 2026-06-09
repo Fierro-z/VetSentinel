@@ -126,7 +126,8 @@ public class DatabaseConfig {
                     "especie TEXT," +
                     "edad INTEGER," +
                     "id_propietario INTEGER," +
-                    "FOREIGN KEY (id_propietario) REFERENCES Propietarios(id))");
+                    "FOREIGN KEY (id_propietario) REFERENCES Propietarios(id)," +
+                    "UNIQUE(nombre, id_propietario))");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS Diagnosticos (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -150,6 +151,7 @@ public class DatabaseConfig {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_diagnosticos_parasito ON Diagnosticos(id_parasito)");
 
             // Intentos seguros de migración
+            try { stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_mascotas_unique_nombre_prop ON Mascotas(nombre, id_propietario)"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN nivel_riesgo TEXT"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Diagnosticos ADD COLUMN reporte TEXT"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN cedula TEXT"); } catch (SQLException ignore) {}

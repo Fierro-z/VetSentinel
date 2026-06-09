@@ -43,7 +43,7 @@ public class SQLiteMascotaRepository implements MascotaRepository {
                 }
             } else {
                 try (PreparedStatement psIns = con.prepareStatement(
-                        "INSERT INTO Mascotas (nombre, especie, edad, id_propietario) VALUES (?, ?, ?, ?)")) {
+                        "INSERT OR REPLACE INTO Mascotas (nombre, especie, edad, id_propietario) VALUES (?, ?, ?, ?)")) {
                     psIns.setString(1, m.getNombre());
                     psIns.setString(2, m.getEspecie());
                     psIns.setInt(3, m.getEdad());
