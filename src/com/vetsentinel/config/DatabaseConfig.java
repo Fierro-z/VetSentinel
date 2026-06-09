@@ -39,19 +39,19 @@ public class DatabaseConfig {
         if (threadConnection.get() != null) {
             throw new SQLException("Una transacción ya está activa en este hilo.");
         }
+        Connection con = connectionPool.getConnection();
         try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("Driver SQLite no encontrado.", e);
+            try (Statement stmt = con.createStatement()) {
+                stmt.execute("PRAGMA journal_mode = WAL;");
+                stmt.execute("PRAGMA busy_timeout = 5000;");
+                stmt.execute("PRAGMA foreign_keys = ON;");
+            }
+            con.setAutoCommit(false);
+            threadConnection.set(con);
+        } catch (SQLException e) {
+            try { con.close(); } catch (SQLException ignore) {}
+            throw e;
         }
-        Connection con = DriverManager.getConnection(URL);
-        try (Statement stmt = con.createStatement()) {
-            stmt.execute("PRAGMA journal_mode = WAL;");
-            stmt.execute("PRAGMA busy_timeout = 5000;");
-            stmt.execute("PRAGMA foreign_keys = ON;");
-        }
-        con.setAutoCommit(false);
-        threadConnection.set(con);
     }
 
     public void commitTransaccion() throws SQLException {
