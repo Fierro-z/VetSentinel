@@ -165,9 +165,10 @@ public class DatabaseConfig {
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN regimen TEXT DEFAULT 'Contributivo'"); } catch (SQLException ignore) {}
             try { stmt.execute("ALTER TABLE Propietarios ADD COLUMN altitud INTEGER DEFAULT 0"); } catch (SQLException ignore) {}
 
-            // Limpieza de diagnósticos huérfanos y parásitos no deseados
-            stmt.execute("DELETE FROM Diagnosticos WHERE id_parasito NOT IN (SELECT id FROM Parasitos WHERE nombre LIKE '%Toxoplasma%' OR nombre LIKE '%Leishmania%' OR nombre LIKE '%Toxocara%')");
-            stmt.execute("DELETE FROM Parasitos WHERE nombre NOT LIKE '%Toxoplasma%' AND nombre NOT LIKE '%Leishmania%' AND nombre NOT LIKE '%Toxocara%'");
+            // NOTA: Esta limpieza destructiva ha sido desactivada en producción para prevenir la pérdida de datos reales.
+            // Si se requiere limpiar registros antiguos/legacy, ejecutar estos comandos como un script de migración manual.
+            // stmt.execute("DELETE FROM Diagnosticos WHERE id_parasito NOT IN (SELECT id FROM Parasitos WHERE nombre LIKE '%Toxoplasma%' OR nombre LIKE '%Leishmania%' OR nombre LIKE '%Toxocara%')");
+            // stmt.execute("DELETE FROM Parasitos WHERE nombre NOT LIKE '%Toxoplasma%' AND nombre NOT LIKE '%Leishmania%' AND nombre NOT LIKE '%Toxocara%'");
 
             // Semilla de parásitos
             String[][] parasitosData = {
