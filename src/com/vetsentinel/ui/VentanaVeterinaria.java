@@ -851,7 +851,10 @@ public class VentanaVeterinaria extends VetBaseFrame {
                 if (e.getClickCount() == 2) {
                     int row = table.getSelectedRow();
                     if (row != -1 && row < data.length) {
-                        String reporte = (String) data[row][8];
+                        String reporte = null;
+                        if (data[row] != null && data[row].length > 8) {
+                            reporte = (String) data[row][8];
+                        }
                         mostrarReporteDetalle(reporte);
                     }
                 }
@@ -861,7 +864,10 @@ public class VentanaVeterinaria extends VetBaseFrame {
         btnVerReporte.addActionListener(event -> {
             int row = table.getSelectedRow();
             if (row != -1 && row < data.length) {
-                String reporte = (String) data[row][8];
+                String reporte = null;
+                if (data[row] != null && data[row].length > 8) {
+                    reporte = (String) data[row][8];
+                }
                 mostrarReporteDetalle(reporte);
             }
         });

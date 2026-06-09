@@ -170,6 +170,7 @@ public class DatabaseConfig {
             // Semilla de parásitos
             String[][] parasitosData = {
                 {"Toxoplasmosis", "Infección por Toxoplasma gondii. Se transmite por heces fecales de gatos, carne mal cocida o agua contaminada. Riesgo crítico en gestantes.", "Evitar manipulación de arena de gato por gestantes y cocer bien las carnes.", "1", "0", "0"},
+                {"Leishmaniasis", "Enfermedad parasitaria transmitida por la picadura de flebótomos (insecto Lutzomyia). Puede presentarse en forma cutánea, mucosa o visceral.", "Uso de repelentes, ropa de manga larga, toldillos y control de vectores.", "0", "1", "1"},
                 {"Leishmaniasis Cutánea", "Enfermedad transmitida por la picadura del insecto Lutzomyia. Produce lesiones ulcerativas en la piel.", "Uso de repelentes, ropa de manga larga, toldillos y control de vectores.", "0", "1", "1"},
                 {"Leishmaniasis Mucosa", "Afectación de las mucosas nasofaríngeas, causando lesiones destructivas secundarias.", "Tratamiento oportuno de la fase cutánea y control entomológico.", "0", "1", "1"},
                 {"Leishmaniasis Visceral", "Enfermedad sistémica grave con afectación de bazo e hígado. Letalidad >95% sin tratamiento.", "Uso de toldillos, fumigación peridomiciliar y control de reservorios.", "0", "1", "1"},
