@@ -185,32 +185,35 @@ public class DatabaseConfig {
                 int alertaNinos = Integer.parseInt(pData[4]);
                 int alertaZonaRural = Integer.parseInt(pData[5]);
 
-                PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Parasitos WHERE nombre = ?");
-                psCheck.setString(1, nombre);
-                ResultSet rsCheck = psCheck.executeQuery();
-
-                if (rsCheck.next()) {
-                    int id = rsCheck.getInt(1);
-                    PreparedStatement psUpd = con.prepareStatement(
-                        "UPDATE Parasitos SET nombre = ?, riesgo_principal = ?, medidas_preventivas = ?, alerta_embarazo = ?, alerta_ninos = ?, alerta_zona_rural = ? WHERE id = ?");
-                    psUpd.setString(1, nombre);
-                    psUpd.setString(2, riesgo);
-                    psUpd.setString(3, medidas);
-                    psUpd.setInt(4, alertaEmbarazo);
-                    psUpd.setInt(5, alertaNinos);
-                    psUpd.setInt(6, alertaZonaRural);
-                    psUpd.setInt(7, id);
-                    psUpd.executeUpdate();
-                } else {
-                    PreparedStatement psIns = con.prepareStatement(
-                        "INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES (?, ?, ?, ?, ?, ?)");
-                    psIns.setString(1, nombre);
-                    psIns.setString(2, riesgo);
-                    psIns.setString(3, medidas);
-                    psIns.setInt(4, alertaEmbarazo);
-                    psIns.setInt(5, alertaNinos);
-                    psIns.setInt(6, alertaZonaRural);
-                    psIns.executeUpdate();
+                try (PreparedStatement psCheck = con.prepareStatement("SELECT id FROM Parasitos WHERE nombre = ?")) {
+                    psCheck.setString(1, nombre);
+                    try (ResultSet rsCheck = psCheck.executeQuery()) {
+                        if (rsCheck.next()) {
+                            int id = rsCheck.getInt(1);
+                            try (PreparedStatement psUpd = con.prepareStatement(
+                                "UPDATE Parasitos SET nombre = ?, riesgo_principal = ?, medidas_preventivas = ?, alerta_embarazo = ?, alerta_ninos = ?, alerta_zona_rural = ? WHERE id = ?")) {
+                                psUpd.setString(1, nombre);
+                                psUpd.setString(2, riesgo);
+                                psUpd.setString(3, medidas);
+                                psUpd.setInt(4, alertaEmbarazo);
+                                psUpd.setInt(5, alertaNinos);
+                                psUpd.setInt(6, alertaZonaRural);
+                                psUpd.setInt(7, id);
+                                psUpd.executeUpdate();
+                            }
+                        } else {
+                            try (PreparedStatement psIns = con.prepareStatement(
+                                "INSERT INTO Parasitos (nombre, riesgo_principal, medidas_preventivas, alerta_embarazo, alerta_ninos, alerta_zona_rural) VALUES (?, ?, ?, ?, ?, ?)")) {
+                                psIns.setString(1, nombre);
+                                psIns.setString(2, riesgo);
+                                psIns.setString(3, medidas);
+                                psIns.setInt(4, alertaEmbarazo);
+                                psIns.setInt(5, alertaNinos);
+                                psIns.setInt(6, alertaZonaRural);
+                                psIns.executeUpdate();
+                            }
+                        }
+                    }
                 }
             }
 
