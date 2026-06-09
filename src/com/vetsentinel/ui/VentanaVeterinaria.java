@@ -602,11 +602,11 @@ public class VentanaVeterinaria extends VetBaseFrame {
         String rawNumeroEmbarazos = txtNumeroEmbarazos.getText().trim();
         String rawAltitud = txtAltitud.getText().trim();
 
-        // 1. Sanitización de textos
-        String nombreMascota = sanitizar(rawNombreMascota);
-        String cedula = sanitizar(rawCedula);
-        String nombrePropietario = sanitizar(rawNombrePropietario);
-        String direccion = sanitizar(rawDireccion);
+        // 1. Asignación directa de textos (los PreparedStatements se encargan de la inyección SQL de forma segura)
+        String nombreMascota = rawNombreMascota;
+        String cedula = rawCedula;
+        String nombrePropietario = rawNombrePropietario;
+        String direccion = rawDireccion;
 
         // 2. Validación de Cédula
         if (!cedula.matches("^[0-9]{5,15}$")) {
@@ -1162,17 +1162,4 @@ public class VentanaVeterinaria extends VetBaseFrame {
         JOptionPane.showMessageDialog(this, msg, title, type);
     }
 
-    private String sanitizar(String input) {
-        if (input == null) return "";
-        // Eliminar etiquetas HTML/XML
-        String clean = input.replaceAll("<[^>]*>", "");
-        // Eliminar secuencias que simulan inyección SQL o comentarios
-        clean = clean.replace("'", "")
-                     .replace("\"", "")
-                     .replace(";", "")
-                     .replace("--", "")
-                     .replace("/*", "")
-                     .replace("*/", "");
-        return clean.trim();
-    }
 }
