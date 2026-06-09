@@ -9,7 +9,34 @@ import java.sql.Statement;
 
 public class DatabaseConfig {
 
-    private static final String URL = "jdbc:sqlite:vetsentinel.db";
+    private static final String URL;
+    static {
+        String dbPath = System.getenv("VETSENTINEL_DB_PATH");
+        if (dbPath == null || dbPath.trim().isEmpty()) {
+            java.io.File configFile = new java.io.File("config.properties");
+            if (configFile.exists()) {
+                java.util.Properties props = new java.util.Properties();
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(configFile)) {
+                    props.load(fis);
+                    dbPath = props.getProperty("database.path");
+                } catch (java.io.IOException e) {
+                    com.vetsentinel.util.VetLogger.error("Error al leer archivo config.properties para la base de datos", e);
+                }
+            }
+        }
+        if (dbPath == null || dbPath.trim().isEmpty()) {
+            dbPath = System.getProperty("user.dir") + java.io.File.separator + "data" + java.io.File.separator + "vetsentinel.db";
+        }
+
+        java.io.File dbFile = new java.io.File(dbPath);
+        java.io.File parentDir = dbFile.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+
+        URL = "jdbc:sqlite:" + dbFile.getAbsolutePath();
+    }
+
     private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
     private final SimpleConnectionPool connectionPool = new SimpleConnectionPool(URL);
 
