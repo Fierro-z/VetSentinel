@@ -123,7 +123,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
                         "JOIN Mascotas m ON d.id_mascota = m.id " +
                         "JOIN Propietarios p ON m.id_propietario = p.id " +
                         "JOIN Parasitos par ON d.id_parasito = par.id " +
-                        "ORDER BY d.fecha DESC";
+                        "ORDER BY d.fecha DESC, d.id DESC";
 
         try (Connection con = dbConfig.getConnection();
              Statement stmt = con.createStatement();
@@ -272,7 +272,7 @@ public class SQLiteDiagnosticoRepository implements DiagnosticoRepository {
                         "JOIN Propietarios p ON m.id_propietario = p.id " +
                         "JOIN Parasitos par ON d.id_parasito = par.id " +
                         "WHERE LOWER(p.departamento) = LOWER(?) " +
-                        "ORDER BY d.fecha DESC";
+                        "ORDER BY d.fecha DESC, d.id DESC";
 
         try (Connection con = dbConfig.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
