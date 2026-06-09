@@ -714,7 +714,15 @@ public class VentanaVeterinaria extends VetBaseFrame {
         if (selectedParasito != null && selectedParasito.getNombre().equalsIgnoreCase("Leishmaniasis")) {
             selectedParasito = (Parasito) cbSubParasito.getSelectedItem();
         }
-        String nombreParasito = selectedParasito != null ? selectedParasito.getNombre() : "No especificado";
+
+        if (selectedParasito == null) {
+            showStyledDialog("Parásito no seleccionado",
+                    "Por favor, selecciona un parásito o un tipo de Leishmaniasis válido.",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String nombreParasito = selectedParasito.getNombre();
         String departamento     = cbDepartamento.getSelectedItem().toString();
         boolean embarazada      = chkEmbarazadas.isSelected();
         boolean ninos           = chkNinos.isSelected();
@@ -882,6 +890,37 @@ public class VentanaVeterinaria extends VetBaseFrame {
         JDialog dialog = pane.createDialog(this, "VetSentinel — Historial");
         dialog.getContentPane().setBackground(bgPanel);
         dialog.setBackground(bgPanel);
+
+        Runnable dialogThemeUpdater = () -> {
+            dialogPanel.setBackground(bgPanel);
+            dlgTitle.setForeground(accentTeal);
+            dlgSub.setForeground(textMuted);
+            scroll.setBackground(bgCard);
+            scroll.getViewport().setBackground(bgCard);
+            scroll.setBorder(BorderFactory.createLineBorder(borderColor));
+            
+            table.setBackground(bgCard);
+            table.setForeground(textPrimary);
+            table.getTableHeader().setBackground(bgDark);
+            table.getTableHeader().setForeground(accentTeal);
+            table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor));
+            
+            dialog.getContentPane().setBackground(bgPanel);
+            dialog.setBackground(bgPanel);
+            
+            dialogPanel.repaint();
+            dialog.repaint();
+        };
+
+        updaters.add(dialogThemeUpdater);
+
+        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                updaters.remove(dialogThemeUpdater);
+            }
+        });
+
         dialog.setVisible(true);
     }
 
@@ -919,6 +958,30 @@ public class VentanaVeterinaria extends VetBaseFrame {
         JDialog dialog = pane.createDialog(this, "VetSentinel — Reporte Detallado");
         dialog.getContentPane().setBackground(bgPanel);
         dialog.setBackground(bgPanel);
+
+        Runnable detailThemeUpdater = () -> {
+            panel.setBackground(bgPanel);
+            title.setForeground(accentTeal);
+            scroll.setBackground(bgPanel);
+            scroll.getViewport().setBackground(bgPanel);
+            area.setForeground(textPrimary);
+            
+            dialog.getContentPane().setBackground(bgPanel);
+            dialog.setBackground(bgPanel);
+            
+            panel.repaint();
+            dialog.repaint();
+        };
+
+        updaters.add(detailThemeUpdater);
+
+        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                updaters.remove(detailThemeUpdater);
+            }
+        });
+
         dialog.setVisible(true);
     }
 
