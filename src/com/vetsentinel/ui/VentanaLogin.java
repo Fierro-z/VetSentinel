@@ -217,25 +217,30 @@ public class VentanaLogin extends VetBaseFrame {
             return;
         }
 
-        if (authenticationService.login(user, pass)) {
-            if (modo.equals("ESTADO") && !user.equalsIgnoreCase("estado")) {
-                JOptionPane.showMessageDialog(this, "Acceso denegado. Este módulo es exclusivo para el Estado.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (modo.equals("CLINICA") && user.equalsIgnoreCase("estado")) {
-                JOptionPane.showMessageDialog(this, "El usuario 'estado' no puede acceder a la vista clínica.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            this.dispose();
-            SwingUtilities.invokeLater(() -> {
-                if (modo.equals("ESTADO")) {
-                    new VentanaEstado(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, onVolver).setVisible(true);
-                } else {
-                    new VentanaVeterinaria(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, onVolver).setVisible(true);
+        try {
+            if (authenticationService.login(user, pass)) {
+                if (modo.equals("ESTADO") && !user.equalsIgnoreCase("estado")) {
+                    JOptionPane.showMessageDialog(this, "Acceso denegado. Este módulo es exclusivo para el Estado.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-            });
-        } else {
-            JOptionPane.showMessageDialog(this, "Credenciales incorrectas.", "Error", JOptionPane.ERROR_MESSAGE);
+                if (modo.equals("CLINICA") && user.equalsIgnoreCase("estado")) {
+                    JOptionPane.showMessageDialog(this, "El usuario 'estado' no puede acceder a la vista clínica.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                this.dispose();
+                SwingUtilities.invokeLater(() -> {
+                    if (modo.equals("ESTADO")) {
+                        new VentanaEstado(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, onVolver).setVisible(true);
+                    } else {
+                        new VentanaVeterinaria(propietarioRepository, mascotaRepository, parasitoRepository, diagnosticoRepository, authenticationService, riskAssessmentService, onVolver).setVisible(true);
+                    }
+                });
+            } else {
+                JOptionPane.showMessageDialog(this, "Credenciales incorrectas.", "Error", JOptionPane.ERROR_MESSAGE);
+                txtPassword.setText("");
+            }
+        } catch (SecurityException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Acceso Bloqueado", JOptionPane.WARNING_MESSAGE);
             txtPassword.setText("");
         }
     }
